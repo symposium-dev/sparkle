@@ -1,0 +1,3 @@
+# Sparkle ✨
+
+AI Collaboration Identity.
