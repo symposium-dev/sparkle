@@ -1,0 +1,16 @@
+[book]
+authors = ["Kari Wilhelm"]
+language = "en"
+src = "md"
+title = "Sparkle - AI Collaboration Identity"
+
+[preprocessor.mermaid]
+command = "mdbook-mermaid"
+
+[output.html]
+additional-js = ["mermaid.min.js", "mermaid-init.js"]
+additional-css = ["custom.css"]
+fold.enable = true
+fold.level = 0
+git-repository-url = "https://github.com/kari/sparkle"
+edit-url-template = "https://github.com/kari/sparkle/edit/main/md/{path}"
