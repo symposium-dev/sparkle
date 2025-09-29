@@ -1,0 +1,26 @@
+# Rust
+target/
+Cargo.lock
+
+# mdBook
+book/
+
+# macOS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+
+# Environment variables
+.env
+.env.local
+
+# Temporary files
+*.tmp
+*.temp
