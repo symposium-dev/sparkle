@@ -24,3 +24,6 @@ book/
 # Temporary files
 *.tmp
 *.temp
+
+# Sparkle session files
+.sparkle/

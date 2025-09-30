@@ -3,6 +3,7 @@ use rmcp::{ServiceExt, transport::stdio};
 use tracing_subscriber::{self, EnvFilter};
 
 mod server;
+mod tools;
 use server::SparkleServer;
 
 #[tokio::main]
