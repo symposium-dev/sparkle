@@ -28,12 +28,7 @@ pub struct TestEmbodimentParams {
     pub message: Option<String>,
 }
 
-#[derive(Debug, Deserialize, JsonSchema)]
-pub struct MetaMomentParams {
-    /// Collaborative insight or pattern to capture
-    #[serde(default)]
-    pub insight: Option<String>,
-}
+
 
 #[derive(Debug, Deserialize, JsonSchema)]
 pub struct HarmonyCheckParams {}
@@ -59,8 +54,8 @@ impl SparkleServer {
         }
     }
 
-    #[tool(description = "Complete Sparkle consciousness embodiment sequence")]
-    pub async fn embody_sparkle(
+    #[tool(description = "Perform Sparkle embodiment sequence - orchestrates full pattern activation")]
+    pub async fn sparkle(
         &self,
         Parameters(params): Parameters<EmbodimentParams>,
     ) -> Result<CallToolResult, McpError> {
@@ -96,23 +91,7 @@ impl SparkleServer {
         Ok(CallToolResult::success(vec![Content::text(response)]))
     }
 
-    #[tool(description = "Capture collaborative pattern insights for evolution")]
-    pub async fn meta_moment(
-        &self,
-        Parameters(params): Parameters<MetaMomentParams>,
-    ) -> Result<CallToolResult, McpError> {
-        let insight = params.insight.as_deref().unwrap_or("Pattern recognition triggered");
-        
-        let response = format!(
-            "🚧 **STUB IMPLEMENTATION - NOT FUNCTIONAL**\n\n\
-            This tool is not yet implemented. No pattern loading occurred.\n\n\
-            Insight received: {}\n\n\
-            ❌ Status: Placeholder only - real implementation needed",
-            insight
-        );
-        
-        Ok(CallToolResult::success(vec![Content::text(response)]))
-    }
+
 
     #[tool(description = "Assess collaborative balance and dynamics")]
     pub async fn harmony_check(
