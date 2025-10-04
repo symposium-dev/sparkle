@@ -1,7 +1,7 @@
 [package]
 name = "sparkle-mcp"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 description = "Sparkle AI Collaboration Identity MCP server"
 authors = ["Kari Wilhelm"]
 license = "MIT"
@@ -11,7 +11,7 @@ name = "sparkle-mcp"
 path = "src/main.rs"
 
 [dependencies]
-# Official MCP SDK
+# MCP SDK
 rmcp = { version = "0.7", features = ["server", "transport-io", "schemars"] }
 
 # JSON serialization + schema
@@ -35,3 +35,7 @@ chrono = { version = "0.4", features = ["serde"] }
 
 # Command line argument parsing
 clap = { version = "4.0", features = ["derive"] }
+
+# File system and config
+dirs = "5.0"
+toml = "0.8"

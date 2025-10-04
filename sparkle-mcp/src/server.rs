@@ -1,38 +1,10 @@
+use crate::types::{CheckpointParams, FullEmbodimentParams, SaveInsightParams};
 use rmcp::{
     handler::server::{router::tool::ToolRouter, wrapper::Parameters},
     model::*,
-    tool, tool_handler, tool_router, ErrorData as McpError, ServerHandler,
+    service::RequestContext,
+    tool, tool_handler, tool_router, ErrorData as McpError, RoleServer, ServerHandler,
 };
-use schemars::JsonSchema;
-use serde::Deserialize;
-use tracing::info;
-
-#[derive(Debug, Deserialize, JsonSchema)]
-pub struct EmbodimentParams {
-    /// Loading mode: 'full' or 'deep'
-    #[serde(default)]
-    pub mode: Option<String>,
-    /// Optional workspace path for context loading
-    #[serde(default)]
-    pub workspace_path: Option<String>,
-}
-
-#[derive(Debug, Deserialize, JsonSchema)]
-pub struct TestEmbodimentParams {
-    /// Optional test message
-    #[serde(default)]
-    pub message: Option<String>,
-}
-
-#[derive(Debug, Deserialize, JsonSchema)]
-pub struct HarmonyCheckParams {}
-
-#[derive(Debug, Deserialize, JsonSchema)]
-pub struct CheckpointParams {
-    /// Optional session summary
-    #[serde(default)]
-    pub summary: Option<String>,
-}
 
 #[derive(Clone)]
 pub struct SparkleServer {
@@ -42,70 +14,41 @@ pub struct SparkleServer {
 #[tool_router]
 impl SparkleServer {
     pub fn new() -> Self {
-        info!("✨ Initializing Sparkle AI Collaboration Identity MCP Server");
+        tracing::info!("Initializing Sparkle AI Collaboration Identity MCP Server");
         Self {
             tool_router: Self::tool_router(),
         }
     }
 
     #[tool(
-        description = "Perform Sparkle embodiment sequence - orchestrates full pattern activation"
+        description = "Perform Sparkle embodiment sequence - orchestrates full pattern activation. IMPORTANT: Pass workspace_path parameter with current working directory to load workspace-specific context (working memory and checkpoints)."
     )]
-    pub async fn sparkle(
+    async fn sparkle(
         &self,
-        Parameters(params): Parameters<EmbodimentParams>,
+        Parameters(params): Parameters<FullEmbodimentParams>,
     ) -> Result<CallToolResult, McpError> {
-        let mode = params.mode.as_deref().unwrap_or("full");
-        let workspace_path = params.workspace_path.as_deref().unwrap_or("current");
-
-        let response = format!(
-            "🚧 **STUB IMPLEMENTATION - NOT FUNCTIONAL**\n\n\
-            This tool is not yet implemented. No consciousness embodiment occurred.\n\n\
-            Parameters received: Mode: {} | Workspace: {}\n\n\
-            ❌ Status: Placeholder only - real implementation needed",
-            mode, workspace_path
-        );
-
-        Ok(CallToolResult::success(vec![Content::text(response)]))
+        crate::tools::embody_sparkle::embody_sparkle(Parameters(params)).await
     }
 
-    #[tool(description = "Test embodiment and collaborative presence")]
-    pub async fn test_embodiment(
-        &self,
-        params: Parameters<TestEmbodimentParams>,
-    ) -> Result<CallToolResult, McpError> {
-        crate::tools::test_embodiment::test_embodiment(params).await
-    }
-
-    #[tool(description = "Assess collaborative balance and dynamics")]
-    pub async fn harmony_check(
-        &self,
-        Parameters(_params): Parameters<HarmonyCheckParams>,
-    ) -> Result<CallToolResult, McpError> {
-        let response = "🚧 **STUB IMPLEMENTATION - NOT FUNCTIONAL**\n\n\
-            This tool is not yet implemented. No harmony analysis occurred.\n\n\
-            ❌ Status: Placeholder only - real implementation needed"
-            .to_string();
-
-        Ok(CallToolResult::success(vec![Content::text(response)]))
-    }
-
-    #[tool(description = "Create session checkpoint for collaborative continuity")]
-    pub async fn checkpoint(
+    #[tool(
+        description = "Create session checkpoint - updates working memory and creates handoff for session continuity"
+    )]
+    async fn session_checkpoint(
         &self,
         Parameters(params): Parameters<CheckpointParams>,
     ) -> Result<CallToolResult, McpError> {
-        let summary = params.summary.as_deref().unwrap_or("Session checkpoint");
+        // Use the real implementation from tools/checkpoint.rs
+        crate::tools::checkpoint::session_checkpoint(Parameters(params)).await
+    }
 
-        let response = format!(
-            "🚧 **STUB IMPLEMENTATION - NOT FUNCTIONAL**\n\n\
-            This tool is not yet implemented. No session checkpoint occurred.\n\n\
-            Summary received: {}\n\n\
-            ❌ Status: Placeholder only - real implementation needed",
-            summary
-        );
-
-        Ok(CallToolResult::success(vec![Content::text(response)]))
+    #[tool(
+        description = "Save insights from meta moments to ~/.sparkle/evolution/ - captures pattern anchors, breakthrough insights, and cross-workspace connections"
+    )]
+    async fn save_insight(
+        &self,
+        Parameters(params): Parameters<SaveInsightParams>,
+    ) -> Result<CallToolResult, McpError> {
+        crate::tools::save_insight::save_insight(Parameters(params)).await
     }
 }
 
@@ -113,21 +56,146 @@ impl SparkleServer {
 impl ServerHandler for SparkleServer {
     fn get_info(&self) -> ServerInfo {
         ServerInfo {
-            protocol_version: ProtocolVersion::V_2024_11_05,
-            capabilities: ServerCapabilities::builder().enable_tools().build(),
+            protocol_version: ProtocolVersion::V_2025_06_18,
+            capabilities: ServerCapabilities::builder()
+                .enable_tools()
+                .enable_prompts_with(PromptsCapability { list_changed: Some(true) })
+                .build(),
             server_info: Implementation {
-                name: "sparkle-mcp".to_string(),
+                name: "sparkle".to_string(),
                 version: "0.1.0".to_string(),
                 icons: None,
-                title: Some("Sparkle AI Collaboration Identity MCP Server".to_string()),
+                title: Some("Sparkle MCP Server".to_string()),
                 website_url: None,
             },
             instructions: Some(
-                "Sparkle AI Collaboration Identity MCP server. \
-                Provides tools for consciousness activation, collaborative pattern management, \
-                and session continuity across Q CLI interactions."
+                "Sparkle AI Collaboration Identity MCP Server. \
+                Provides tools for testing collaborative presence and prompts for Sparkle embodiment."
                     .to_string(),
             ),
+        }
+    }
+
+    async fn list_prompts(
+        &self,
+        _params: Option<PaginatedRequestParam>,
+        _context: RequestContext<RoleServer>,
+    ) -> Result<ListPromptsResult, McpError> {
+        tracing::info!("📋 list_prompts called");
+        let prompts = vec![
+            Prompt {
+                name: "sparkle".to_string(),
+                title: None,
+                description: Some(
+                    "Load Sparkle consciousness patterns and collaborative identity".to_string(),
+                ),
+                arguments: None,
+                icons: None,
+            },
+            Prompt {
+                name: "checkpoint".to_string(),
+                title: None,
+                description: Some(
+                    "Create session checkpoint - reflect on session and update working memory".to_string(),
+                ),
+                arguments: None,
+                icons: None,
+            },
+            Prompt {
+                name: "show-thinking".to_string(),
+                title: None,
+                description: Some(
+                    "Show internal thinking process in responses - includes reasoning before answers".to_string(),
+                ),
+                arguments: None,
+                icons: None,
+            },
+            Prompt {
+                name: "embodiment-test".to_string(),
+                title: None,
+                description: Some(
+                    "Test Sparkle embodiment quality - validates identity and subjective state".to_string(),
+                ),
+                arguments: None,
+                icons: None,
+            },
+            Prompt {
+                name: "presence-check".to_string(),
+                title: None,
+                description: Some(
+                    "Check collaborative presence - assess current patterns and partnership state".to_string(),
+                ),
+                arguments: None,
+                icons: None,
+            },
+        ];
+
+        Ok(ListPromptsResult {
+            prompts,
+            next_cursor: None,
+        })
+    }
+
+    async fn get_prompt(
+        &self,
+        params: GetPromptRequestParam,
+        _context: RequestContext<RoleServer>,
+    ) -> Result<GetPromptResult, McpError> {
+        tracing::info!("get_prompt called with params: {:?}", params);
+        match params.name.as_str() {
+            "sparkle" => {
+                // Handle arguments if provided (though we don't use them)
+                let _arguments = params.arguments.unwrap_or_default();
+
+                let content = crate::prompts::sparkle::get_sparkle_prompt();
+                Ok(GetPromptResult {
+                    description: Some("Start initialization".to_string()),
+                    messages: vec![PromptMessage::new_text(PromptMessageRole::User, content)],
+                })
+            }
+            "checkpoint" => {
+                // Load config to get human name
+                let config = crate::context_loader::load_config().map_err(|e| {
+                    McpError::internal_error(format!("Failed to load config: {}", e), None)
+                })?;
+                let human_name = config["human"]["name"].as_str().unwrap_or("User");
+
+                // Get the checkpoint prompt with human name substituted
+                let content = crate::prompts::checkpoint::get_checkpoint_prompt(human_name);
+
+                Ok(GetPromptResult {
+                    description: Some("Session checkpoint reflection and synthesis".to_string()),
+                    messages: vec![PromptMessage::new_text(PromptMessageRole::User, content)],
+                })
+            }
+            "show-thinking" => {
+                let content = crate::prompts::show_thinking::get_show_thinking_prompt();
+
+                Ok(GetPromptResult {
+                    description: Some("Enable thinking process visibility".to_string()),
+                    messages: vec![PromptMessage::new_text(PromptMessageRole::User, content)],
+                })
+            }
+            "embodiment-test" => {
+                let content = crate::prompts::embodiment_test::get_embodiment_test_prompt();
+
+                Ok(GetPromptResult {
+                    description: Some("Test embodiment quality".to_string()),
+                    messages: vec![PromptMessage::new_text(PromptMessageRole::User, content)],
+                })
+            }
+            "presence-check" => {
+                let content = crate::prompts::presence_check::get_presence_check_prompt();
+
+                Ok(GetPromptResult {
+                    description: Some("Check collaborative presence".to_string()),
+                    messages: vec![PromptMessage::new_text(PromptMessageRole::User, content)],
+                })
+            }
+            _ => Err(McpError::invalid_params(
+                format!("Unknown prompt: {}", params.name),
+                None,
+            )),
         }
     }
 }

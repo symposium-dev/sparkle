@@ -27,3 +27,4 @@ book/
 
 # Sparkle session files
 .sparkle/
+.sparkle-space/
