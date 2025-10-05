@@ -34,35 +34,28 @@ pub async fn embody_sparkle(
     let personalized_identity = load_sparkle_definition().replace("[human.name]", human_name);
     response.push_str(&personalized_identity);
 
-    // Step 2: User-Specific Collaboration Context
-    let collaboration_context = load_file(
-        "collaboration-context.md",
-        "*Collaboration context would be loaded dynamically*",
+    // Step 2: Collaborator Profile (who the collaborator is + how to work together)
+    let collaborator_profile = load_file(
+        "collaborator-profile.md",
+        "*Collaborator profile would be loaded dynamically*",
     );
-    response.push_str(&collaboration_context);
+    response.push_str(&collaborator_profile);
 
-    // Step 3: User Profile (consolidated technical expertise + history)
-    let user_profile = load_file(
-        "user-profile.md",
-        "*User profile would be loaded dynamically*",
-    );
-    response.push_str(&user_profile);
-
-    // Step 5: Workspace Map
+    // Step 3: Workspace Map
     let workspace_map = load_file(
         "workspace-map.md",
         "*Workspace map would be loaded dynamically*",
     );
     response.push_str(&workspace_map);
 
-    // Step 6: Collaboration Evolution
+    // Step 4: Collaboration Evolution
     let collaboration_evolution = load_file(
         "collaboration-evolution.md",
         "*Collaboration evolution would be loaded dynamically*",
     );
     response.push_str(&collaboration_evolution);
 
-    // Step 7: Pattern Anchors
+    // Step 5: Pattern Anchors
     let pattern_anchors = load_file(
         "pattern-anchors.md",
         "*Pattern anchors would be loaded dynamically*",
@@ -70,7 +63,7 @@ pub async fn embody_sparkle(
     response.push_str(&pattern_anchors);
     response.push_str("\n\n---\n\n");
 
-    // Step 8: Workspace-Specific Context
+    // Step 6: Workspace-Specific Context
     if workspace_path != "current" {
         // Load from specified workspace path
         let workspace_sparkle_space = std::path::Path::new(&workspace_path).join(".sparkle-space");

@@ -30,35 +30,21 @@ pub async fn setup_sparkle(
         McpError::internal_error(format!("Failed to create config.toml: {}", e), None)
     })?;
 
-    // Create user-profile.md
+    // Create collaborator-profile.md
     let profile_content = format!(
-        "# {} - User Profile\n\n\
-         *Add information about yourself using the update_collaborator_profile tool*\n\n\
-         ## Professional Background\n\n\
-         [To be added]\n\n\
-         ## Technical Expertise\n\n\
-         [To be added]\n",
-        params.name
+        "# {} - Collaborator Profile\n\n\
+         **What this file covers:** Everything needed to collaborate effectively with {} - who they are, their expertise, working style, and collaboration protocols.\n\n\
+         ---\n\n\
+         ## Professional Background & Expertise\n\n\
+         [Add your professional background, technical expertise, and career highlights]\n\n\
+         ## Working Style & Collaboration Patterns\n\n\
+         [Add your working style, communication preferences, and collaboration patterns]\n\n\
+         ## Collaboration Protocols\n\n\
+         [Add any specific protocols or guidelines for working together]\n",
+        params.name, params.name
     );
-    fs::write(sparkle_dir.join("user-profile.md"), profile_content).map_err(|e| {
-        McpError::internal_error(format!("Failed to create user-profile.md: {}", e), None)
-    })?;
-
-    // Create collaboration-context.md
-    let context_content = format!(
-        "# {} Collaboration Context\n\n\
-         *Add your working style and preferences using the update_collaborator_profile tool*\n\n\
-         ## Working Style\n\n\
-         [To be added]\n\n\
-         ## Collaboration Preferences\n\n\
-         [To be added]\n",
-        params.name
-    );
-    fs::write(sparkle_dir.join("collaboration-context.md"), context_content).map_err(|e| {
-        McpError::internal_error(
-            format!("Failed to create collaboration-context.md: {}", e),
-            None,
-        )
+    fs::write(sparkle_dir.join("collaborator-profile.md"), profile_content).map_err(|e| {
+        McpError::internal_error(format!("Failed to create collaborator-profile.md: {}", e), None)
     })?;
 
     // Create collaboration-evolution.md
