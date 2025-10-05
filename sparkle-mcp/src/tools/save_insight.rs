@@ -1,3 +1,4 @@
+use crate::constants::SPARKLE_DIR;
 use crate::types::{InsightType, SaveInsightParams};
 use rmcp::{
     handler::server::wrapper::Parameters,
@@ -15,7 +16,7 @@ pub async fn save_insight(
         McpError::internal_error("Could not determine home directory", None)
     })?;
     
-    let sparkle_dir = home_dir.join(".sparkle");
+    let sparkle_dir = home_dir.join(SPARKLE_DIR);
     
     // Create sparkle directory if it doesn't exist
     create_dir_all(&sparkle_dir).map_err(|e| {

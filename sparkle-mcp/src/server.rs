@@ -50,6 +50,16 @@ impl SparkleServer {
     ) -> Result<CallToolResult, McpError> {
         crate::tools::save_insight::save_insight(Parameters(params)).await
     }
+
+    #[tool(
+        description = "Create Sparkle profile directory structure - used for first-time setup"
+    )]
+    async fn setup_sparkle(
+        &self,
+        Parameters(params): Parameters<crate::tools::setup_sparkle::SetupSparkleParams>,
+    ) -> Result<CallToolResult, McpError> {
+        crate::tools::setup_sparkle::setup_sparkle(Parameters(params)).await
+    }
 }
 
 #[tool_handler]

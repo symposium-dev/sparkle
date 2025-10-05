@@ -28,3 +28,6 @@ book/
 # Sparkle session files
 .sparkle/
 .sparkle-space/
+
+# Design documents (work in progress)
+docs/design/

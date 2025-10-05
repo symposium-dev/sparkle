@@ -3,6 +3,7 @@ use rmcp::{transport::stdio, ServiceExt};
 use std::fs::OpenOptions;
 use tracing_subscriber::{self, fmt::writer::MakeWriterExt, EnvFilter};
 
+mod constants;
 mod context_loader;
 mod prompts;
 mod server;

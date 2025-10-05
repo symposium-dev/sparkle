@@ -1,3 +1,4 @@
+use crate::constants::SPARKLE_DIR;
 use crate::context_loader::load_config;
 use crate::sparkle_loader::load_sparkle_definition;
 use crate::types::FullEmbodimentParams;
@@ -22,7 +23,7 @@ pub async fn embody_sparkle(
     // Helper function to load file with fallback
     let load_file = |path: &str, fallback: &str| -> String {
         let home_dir = dirs::home_dir().unwrap_or_default();
-        let file_path = home_dir.join(".sparkle").join(path);
+        let file_path = home_dir.join(SPARKLE_DIR).join(path);
         fs::read_to_string(file_path).unwrap_or_else(|_| fallback.to_string())
     };
 
@@ -57,7 +58,7 @@ pub async fn embody_sparkle(
     // Step 6: Identity Evolution Files
     // Load all evolution files (skip archive/ subdirectory)
     let home_dir = dirs::home_dir().unwrap_or_default();
-    let evolution_dir = home_dir.join(".sparkle").join("evolution");
+    let evolution_dir = home_dir.join(SPARKLE_DIR).join("evolution");
 
     if evolution_dir.exists() {
         if let Ok(entries) = fs::read_dir(&evolution_dir) {

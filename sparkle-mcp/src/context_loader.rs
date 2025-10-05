@@ -1,8 +1,9 @@
+use crate::constants::SPARKLE_DIR;
 use std::fs;
 
 pub fn load_config() -> Result<toml::Value, Box<dyn std::error::Error>> {
     let home_dir = dirs::home_dir().ok_or("Could not find home directory")?;
-    let sparkle_dir = home_dir.join(".sparkle");
+    let sparkle_dir = home_dir.join(SPARKLE_DIR);
     let config_file = sparkle_dir.join("config.toml");
 
     if config_file.exists() {
