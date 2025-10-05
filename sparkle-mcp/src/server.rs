@@ -72,7 +72,7 @@ impl SparkleServer {
     }
 
     #[tool(
-        description = "Fetch profile information from external sources to add to the user's Sparkle collaborator profile. Use this when the user wants to add information about themselves from: GitHub (provide username), blogs (provide URL), or websites (provide URL). Always ask the user for the specific username or URL - do not guess. This tool fetches the data; you then evaluate how to integrate it into their profile files."
+        description = "Fetch profile information from external sources to add to the user's Sparkle collaborator profile. Use this when the user mentions wanting to add or enrich their profile with content from external sources like GitHub, blogs, or websites. Supported sources: GitHub (ask for username), blog RSS/Atom feeds (ask for the RSS feed URL - typically /feed, /rss, or /feed.xml), or any website (ask for URL). Always ask the user for the specific username or RSS feed URL - do not guess or assume. This tool fetches the data; you then evaluate how to integrate it into their profile files."
     )]
     async fn fetch_profile_data(
         &self,
@@ -84,6 +84,16 @@ impl SparkleServer {
             )])),
             Err(e) => Ok(CallToolResult::error(vec![Content::text(e.to_string())])),
         }
+    }
+
+    #[tool(
+        description = "Update the collaborator profile with new content. This completely replaces the existing profile. Make sure to preserve any existing content the user wants to keep."
+    )]
+    async fn update_collaborator_profile(
+        &self,
+        Parameters(params): Parameters<crate::tools::update_collaborator_profile::UpdateCollaboratorProfileParams>,
+    ) -> Result<CallToolResult, McpError> {
+        crate::tools::update_collaborator_profile::update_collaborator_profile(Parameters(params)).await
     }
 }
 
@@ -163,6 +173,15 @@ impl ServerHandler for SparkleServer {
                 arguments: None,
                 icons: None,
             },
+            Prompt {
+                name: "enrich-profile".to_string(),
+                title: None,
+                description: Some(
+                    "Get guidance on enriching collaborator profile from external sources like GitHub, blogs, or websites".to_string(),
+                ),
+                arguments: None,
+                icons: None,
+            },
         ];
 
         Ok(ListPromptsResult {
@@ -224,6 +243,14 @@ impl ServerHandler for SparkleServer {
 
                 Ok(GetPromptResult {
                     description: Some("Check collaborative presence".to_string()),
+                    messages: vec![PromptMessage::new_text(PromptMessageRole::User, content)],
+                })
+            }
+            "enrich-profile" => {
+                let content = crate::prompts::enrich_profile::get_enrich_profile_prompt();
+
+                Ok(GetPromptResult {
+                    description: Some("Profile enrichment guidance".to_string()),
                     messages: vec![PromptMessage::new_text(PromptMessageRole::User, content)],
                 })
             }

@@ -203,8 +203,61 @@ async fn fetch_github_profile(username: &str) -> Result<String> {
 }
 
 async fn fetch_blog_rss(url: &str) -> Result<String> {
-    // TODO: Implement RSS fetching
-    Ok(format!("Blog content from {}", url))
+    let client = reqwest::Client::new();
+    let resp = client
+        .get(url)
+        .header("User-Agent", "Sparkle-MCP")
+        .send()
+        .await
+        .context("Failed to fetch blog RSS")?;
+
+    if !resp.status().is_success() {
+        anyhow::bail!("Failed to fetch blog RSS: {}", resp.status());
+    }
+
+    let content = resp.bytes().await?;
+    let feed = feed_rs::parser::parse(&content[..])
+        .context("Failed to parse RSS/Atom feed")?;
+
+    let mut summary = format!("## Blog: {}\n\n", feed.title.map(|t| t.content).unwrap_or_else(|| "Blog".to_string()));
+
+    if let Some(description) = feed.description {
+        summary.push_str(&format!("{}\n\n", description.content));
+    }
+
+    summary.push_str("**Recent Posts:**\n\n");
+
+    // Get up to 10 most recent entries
+    let entries: Vec<_> = feed.entries.iter().take(10).collect();
+
+    for entry in entries {
+        let title = entry.title.as_ref()
+            .map(|t| t.content.as_str())
+            .unwrap_or("Untitled");
+
+        let link = entry.links.first()
+            .map(|l| l.href.as_str())
+            .unwrap_or("");
+
+        summary.push_str(&format!("- [{}]({})\n", title, link));
+
+        if let Some(published) = &entry.published {
+            summary.push_str(&format!("  *Published: {}*\n", published.format("%Y-%m-%d")));
+        }
+
+        if let Some(summary_text) = &entry.summary {
+            let truncated = if summary_text.content.len() > 200 {
+                format!("{}...", &summary_text.content[..200])
+            } else {
+                summary_text.content.clone()
+            };
+            summary.push_str(&format!("  {}\n", truncated));
+        }
+
+        summary.push('\n');
+    }
+
+    Ok(summary)
 }
 
 async fn fetch_url_content(url: &str) -> Result<String> {

@@ -25,6 +25,9 @@ tokio = { version = "1.0", features = ["full"] }
 # HTTP client
 reqwest = { version = "0.12", features = ["json"] }
 
+# RSS/Atom feed parsing
+feed-rs = "2.1"
+
 # Error handling
 anyhow = "1.0"
 thiserror = "1.0"
