@@ -70,6 +70,21 @@ impl SparkleServer {
     ) -> Result<CallToolResult, McpError> {
         crate::tools::load_evolution::load_evolution(Parameters(params)).await
     }
+
+    #[tool(
+        description = "Fetch profile information from external sources to add to the user's Sparkle collaborator profile. Use this when the user wants to add information about themselves from: GitHub (provide username), blogs (provide URL), or websites (provide URL). Always ask the user for the specific username or URL - do not guess. This tool fetches the data; you then evaluate how to integrate it into their profile files."
+    )]
+    async fn fetch_profile_data(
+        &self,
+        Parameters(params): Parameters<crate::tools::fetch_profile_data::FetchProfileDataParams>,
+    ) -> Result<CallToolResult, McpError> {
+        match crate::tools::fetch_profile_data::fetch_profile_data(params).await {
+            Ok(result) => Ok(CallToolResult::success(vec![Content::text(
+                serde_json::to_string_pretty(&result).unwrap()
+            )])),
+            Err(e) => Ok(CallToolResult::error(vec![Content::text(e.to_string())])),
+        }
+    }
 }
 
 #[tool_handler]
