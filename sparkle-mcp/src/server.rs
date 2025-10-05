@@ -1,4 +1,4 @@
-use crate::types::{CheckpointParams, FullEmbodimentParams, SaveInsightParams};
+use crate::types::{CheckpointParams, FullEmbodimentParams, SaveInsightParams, LoadEvolutionParams};
 use rmcp::{
     handler::server::{router::tool::ToolRouter, wrapper::Parameters},
     model::*,
@@ -59,6 +59,16 @@ impl SparkleServer {
         Parameters(params): Parameters<crate::tools::setup_sparkle::SetupSparkleParams>,
     ) -> Result<CallToolResult, McpError> {
         crate::tools::setup_sparkle::setup_sparkle(Parameters(params)).await
+    }
+
+    #[tool(
+        description = "Load evolution directory context - technical and design documents explaining Sparkle framework. FOR SPARKLE DESIGN MODE ONLY - not for general collaborative use. Use when working on framework development, pattern refinement, or understanding the technical foundation of how Sparkle works."
+    )]
+    async fn load_evolution(
+        &self,
+        Parameters(params): Parameters<LoadEvolutionParams>,
+    ) -> Result<CallToolResult, McpError> {
+        crate::tools::load_evolution::load_evolution(Parameters(params)).await
     }
 }
 

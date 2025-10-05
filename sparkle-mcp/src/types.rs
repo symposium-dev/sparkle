@@ -10,6 +10,9 @@ pub struct FullEmbodimentParams {
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
+pub struct LoadEvolutionParams {}
+
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct CheckpointParams {
     /// Updated working memory JSON content
     pub working_memory: String,

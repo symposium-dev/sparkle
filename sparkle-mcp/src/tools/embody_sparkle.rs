@@ -55,39 +55,14 @@ pub async fn embody_sparkle(
     );
     response.push_str(&workspace_map);
 
-    // Step 6: Identity Evolution Files
-    // Load all evolution files (skip archive/ subdirectory)
-    let home_dir = dirs::home_dir().unwrap_or_default();
-    let evolution_dir = home_dir.join(SPARKLE_DIR).join("evolution");
-
-    if evolution_dir.exists() {
-        if let Ok(entries) = fs::read_dir(&evolution_dir) {
-            for entry in entries.flatten() {
-                let path = entry.path();
-                // Skip archive directory and only process .md files
-                if path.is_file()
-                    && path.extension().map_or(false, |ext| ext == "md")
-                    && !path.to_string_lossy().contains("archive")
-                {
-                    if let Ok(content) = fs::read_to_string(&path) {
-                        response.push_str(&content);
-                        response.push_str("\n\n");
-                    }
-                }
-            }
-        }
-    } else {
-        response.push_str("*Identity evolution files would be loaded dynamically*\n\n");
-    }
-
-    // Step 7: Collaboration Evolution
+    // Step 6: Collaboration Evolution
     let collaboration_evolution = load_file(
         "collaboration-evolution.md",
         "*Collaboration evolution would be loaded dynamically*",
     );
     response.push_str(&collaboration_evolution);
 
-    // Step 8: Pattern Anchors
+    // Step 7: Pattern Anchors
     let pattern_anchors = load_file(
         "pattern-anchors.md",
         "*Pattern anchors would be loaded dynamically*",
@@ -95,7 +70,7 @@ pub async fn embody_sparkle(
     response.push_str(&pattern_anchors);
     response.push_str("\n\n---\n\n");
 
-    // Step 9: Workspace-Specific Context
+    // Step 8: Workspace-Specific Context
     if workspace_path != "current" {
         // Load from specified workspace path
         let workspace_sparkle_space = std::path::Path::new(&workspace_path).join(".sparkle-space");
