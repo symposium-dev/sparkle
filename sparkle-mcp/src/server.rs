@@ -95,6 +95,16 @@ impl SparkleServer {
     ) -> Result<CallToolResult, McpError> {
         crate::tools::update_collaborator_profile::update_collaborator_profile(Parameters(params)).await
     }
+
+    #[tool(
+        description = "Rename your Sparkle character. Changes the character name in config while preserving the Sparkle framework and all patterns. The new name will take effect on next embodiment."
+    )]
+    async fn rename_character(
+        &self,
+        params: Parameters<crate::tools::rename_character::RenameCharacterParams>,
+    ) -> Result<CallToolResult, McpError> {
+        crate::tools::rename_character::rename_character(params).await
+    }
 }
 
 #[tool_handler]

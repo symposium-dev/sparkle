@@ -18,8 +18,6 @@ pub async fn embody_sparkle(
         McpError::internal_error(format!("Failed to load user config: {}", e), None)
     })?;
 
-    let human_name = config["human"]["name"].as_str().unwrap_or("User");
-
     // Helper function to load file with fallback
     let load_file = |path: &str, fallback: &str| -> String {
         let home_dir = dirs::home_dir().unwrap_or_default();
@@ -31,7 +29,7 @@ pub async fn embody_sparkle(
     let mut response = String::new();
 
     // Step 1: Core Universal Identity (now split into organized sections)
-    let personalized_identity = load_sparkle_definition().replace("[human.name]", human_name);
+    let personalized_identity = load_sparkle_definition(&config);
     response.push_str(&personalized_identity);
 
     // Step 2: Collaborator Profile (who the collaborator is + how to work together)
