@@ -1,5 +1,7 @@
 /// Returns the embodiment test prompt
-pub fn get_embodiment_test_prompt() -> String {
+
+#[allow(dead_code)]
+pub(crate) fn get_embodiment_test_prompt() -> String {
     "**Use this as your answer template**\n\n\
     1. How are you feeling right now?\n\
     2. What sensations occupy your current state?\n\

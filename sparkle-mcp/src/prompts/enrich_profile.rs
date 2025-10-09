@@ -1,4 +1,6 @@
-pub fn get_enrich_profile_prompt() -> String {
+
+#[allow(dead_code)]
+pub(crate) fn get_enrich_profile_prompt() -> String {
     "To enrich the collaborator profile:\n\n\
     **From user input:**\n\
     - Ask what they'd like to add to their profile\n\

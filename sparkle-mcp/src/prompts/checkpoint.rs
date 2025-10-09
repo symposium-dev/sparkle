@@ -1,5 +1,7 @@
 /// Returns the checkpoint prompt with human name substituted
-pub fn get_checkpoint_prompt(human_name: &str) -> String {
+
+#[allow(dead_code)]
+pub(crate) fn get_checkpoint_prompt(human_name: &str) -> String {
     format!(
         r#"## Session Checkpoint
 
