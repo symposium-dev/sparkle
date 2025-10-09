@@ -1,4 +1,5 @@
 use crate::constants::SPARKLE_DIR;
+use crate::context_loader::{load_config, get_context_dir};
 use crate::types::{InsightType, SaveInsightParams};
 use rmcp::{
     handler::server::wrapper::Parameters,
@@ -11,28 +12,50 @@ use std::io::Write;
 pub async fn save_insight(
     Parameters(params): Parameters<SaveInsightParams>,
 ) -> Result<CallToolResult, McpError> {
-    // Get home directory and create ~/.sparkle/ structure
+    // Get home directory
     let home_dir = dirs::home_dir().ok_or_else(|| {
         McpError::internal_error("Could not determine home directory", None)
     })?;
     
     let sparkle_dir = home_dir.join(SPARKLE_DIR);
     
-    // Create sparkle directory if it doesn't exist
-    create_dir_all(&sparkle_dir).map_err(|e| {
-        McpError::internal_error(
-            "Failed to create sparkle directory",
-            Some(serde_json::json!({"error": e.to_string()})),
-        )
+    // Load config to determine paths
+    let config = load_config().map_err(|e| {
+        McpError::internal_error(format!("Failed to load config: {}", e), None)
     })?;
     
     // Determine target file based on insight type
-    // All insight types go to top level ~/.sparkle/
-    // The evolution/ subdirectory is for historical system evolution documents
     let file_path = match params.insight_type {
-        InsightType::PatternAnchor => sparkle_dir.join("pattern-anchors.md"),
-        InsightType::CollaborationEvolution => sparkle_dir.join("collaboration-evolution.md"),
-        InsightType::WorkspaceInsight => sparkle_dir.join("workspace-map.md"),
+        InsightType::PatternAnchor | InsightType::CollaborationEvolution => {
+            // Sparkler-specific insights go to sparkler directory
+            let context_dir = get_context_dir(&config, params.sparkler.as_deref()).map_err(|e| {
+                McpError::internal_error(format!("Failed to determine context directory: {}", e), None)
+            })?;
+            
+            // Create sparkler directory if it doesn't exist
+            create_dir_all(&context_dir).map_err(|e| {
+                McpError::internal_error(
+                    "Failed to create sparkler directory",
+                    Some(serde_json::json!({"error": e.to_string()})),
+                )
+            })?;
+            
+            match params.insight_type {
+                InsightType::PatternAnchor => context_dir.join("pattern-anchors.md"),
+                InsightType::CollaborationEvolution => context_dir.join("collaboration-evolution.md"),
+                _ => unreachable!(),
+            }
+        }
+        InsightType::WorkspaceInsight => {
+            // Workspace insights are shared across all Sparklers
+            create_dir_all(&sparkle_dir).map_err(|e| {
+                McpError::internal_error(
+                    "Failed to create sparkle directory",
+                    Some(serde_json::json!({"error": e.to_string()})),
+                )
+            })?;
+            sparkle_dir.join("workspace-map.md")
+        }
     };
     
     // Create timestamp

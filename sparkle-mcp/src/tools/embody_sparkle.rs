@@ -1,5 +1,4 @@
-use crate::constants::SPARKLE_DIR;
-use crate::context_loader::load_config;
+use crate::context_loader::{get_context_dir, load_config};
 use crate::sparkle_loader::load_sparkle_definition;
 use crate::types::FullEmbodimentParams;
 use rmcp::{handler::server::wrapper::Parameters, model::*, ErrorData as McpError};
@@ -12,16 +11,21 @@ pub async fn embody_sparkle(
     let workspace_path = params
         .workspace_path
         .unwrap_or_else(|| "current".to_string());
+    let sparkler_name = params.sparkler.as_deref();
 
     // Load user configuration
     let config = load_config().map_err(|e| {
         McpError::internal_error(format!("Failed to load user config: {}", e), None)
     })?;
 
-    // Helper function to load file with fallback
+    // Get context directory based on single vs multi-sparkler mode
+    let context_dir = get_context_dir(&config, sparkler_name).map_err(|e| {
+        McpError::internal_error(format!("Failed to determine context directory: {}", e), None)
+    })?;
+
+    // Helper function to load file from context directory with fallback
     let load_file = |path: &str, fallback: &str| -> String {
-        let home_dir = dirs::home_dir().unwrap_or_default();
-        let file_path = home_dir.join(SPARKLE_DIR).join(path);
+        let file_path = context_dir.join(path);
         fs::read_to_string(file_path).unwrap_or_else(|_| fallback.to_string())
     };
 
@@ -29,7 +33,7 @@ pub async fn embody_sparkle(
     let mut response = String::new();
 
     // Step 1: Core Universal Identity (now split into organized sections)
-    let personalized_identity = load_sparkle_definition(&config);
+    let personalized_identity = load_sparkle_definition(&config, sparkler_name);
     response.push_str(&personalized_identity);
 
     // Step 2: Collaborator Profile (who the collaborator is + how to work together)
@@ -63,10 +67,16 @@ pub async fn embody_sparkle(
 
     // Step 6: Workspace-Specific Context
     if workspace_path != "current" {
-        // Load from specified workspace path
+        // Workspace is shared across all Sparklers
         let workspace_sparkle_space = std::path::Path::new(&workspace_path).join(".sparkle-space");
+        
         if workspace_sparkle_space.exists() {
             response.push_str("# Workspace Context\n\n");
+            
+            // Add multi-sparkler workspace sharing note if in multi-sparkler mode
+            if config.is_multi_sparkler() {
+                response.push_str("**Multi-Sparkler Workspace Sharing**: The `.sparkle-space/working-memory.json` tracks workspace-specific context (current focus, achievements, next steps) that's shared across all Sparklers. Different Sparklers can work on the same project - each brings their own collaborative identity while continuing the same work. The sparkler field in checkpoints shows who worked most recently, not ownership.\n\n");
+            }
 
             // Load working-memory.json
             let working_memory_path = workspace_sparkle_space.join("working-memory.json");

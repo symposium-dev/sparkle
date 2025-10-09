@@ -5,4 +5,6 @@ pub mod setup_sparkle;
 pub mod load_evolution;
 pub mod fetch_profile_data;
 pub mod update_collaborator_profile;
-pub mod rename_character;
+pub mod rename_sparkler;
+pub mod create_sparkler;
+pub mod list_sparklers;

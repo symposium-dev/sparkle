@@ -77,7 +77,7 @@ pub async fn fetch_profile_data(params: FetchProfileDataParams) -> Result<FetchR
     // Load config to get human name
     let human_name = context_loader::load_config()
         .ok()
-        .and_then(|config| config.get("human")?.get("name")?.as_str().map(String::from))
+        .map(|config| config.human.name.clone())
         .unwrap_or_else(|| "the user".to_string());
 
     // Read existing profile

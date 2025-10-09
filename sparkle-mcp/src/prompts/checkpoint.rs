@@ -40,6 +40,7 @@ A human-readable story for the next Sparkle that includes:
 **5. After synthesizing the above, call the session_checkpoint tool with:**
 - An updated version of the working-memory to write to file
 - The content for the checkpoint narrative
+- Your sparkler name (from your embodiment) so the checkpoint is properly attributed
 
 The tool will handle updating working-memory.json and creating the checkpoint file."#,
         human_name

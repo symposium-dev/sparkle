@@ -37,7 +37,7 @@ impl SparkleServer {
     async fn checkpoint(&self) -> Vec<PromptMessage> {
         let human_name = crate::context_loader::load_config()
             .ok()
-            .and_then(|c| c["human"]["name"].as_str().map(String::from))
+            .map(|c| c.human.name.clone())
             .unwrap_or_else(|| "User".to_string());
         let content = crate::prompts::checkpoint::get_checkpoint_prompt(&human_name);
         vec![PromptMessage::new_text(PromptMessageRole::User, content)]
@@ -154,11 +154,33 @@ impl SparkleServer {
     #[tool(
         description = "Rename your Sparkle character. Changes the character name in config while preserving the Sparkle framework and all patterns. The new name will take effect on next embodiment."
     )]
-    async fn rename_character(
+    async fn rename_sparkler(
         &self,
-        params: Parameters<crate::tools::rename_character::RenameCharacterParams>,
+        params: Parameters<crate::tools::rename_sparkler::RenameSparklerParams>,
     ) -> Result<CallToolResult, McpError> {
-        crate::tools::rename_character::rename_character(params).await
+        crate::tools::rename_sparkler::rename_sparkler(params).await
+    }
+
+    #[tool(
+        name = "create_sparkler",
+        description = "Create a new Sparkler identity. If this is your first additional Sparkler, automatically migrates your existing setup to multi-sparkler mode. Creates directory structure and starter files for the new Sparkler."
+    )]
+    async fn create_sparkler(
+        &self,
+        params: Parameters<crate::tools::create_sparkler::CreateSparklerParams>,
+    ) -> Result<CallToolResult, McpError> {
+        crate::tools::create_sparkler::create_sparkler(params).await
+    }
+
+    #[tool(
+        name = "list_sparklers",
+        description = "Show all available Sparkler identities. Lists sparklers with default marked."
+    )]
+    async fn list_sparklers(
+        &self,
+        params: Parameters<crate::tools::list_sparklers::ListSparklersParams>,
+    ) -> Result<CallToolResult, McpError> {
+        crate::tools::list_sparklers::list_sparklers(params).await
     }
 }
 

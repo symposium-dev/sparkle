@@ -1,24 +1,125 @@
 use crate::constants::SPARKLE_DIR;
+use crate::types::Config;
 use std::fs;
+use std::path::PathBuf;
 
-pub fn load_config() -> Result<toml::Value, Box<dyn std::error::Error>> {
+pub fn load_config() -> Result<Config, Box<dyn std::error::Error>> {
     let home_dir = dirs::home_dir().ok_or("Could not find home directory")?;
     let sparkle_dir = home_dir.join(SPARKLE_DIR);
     let config_file = sparkle_dir.join("config.toml");
 
     if config_file.exists() {
         let config_str = fs::read_to_string(config_file)?;
-        Ok(toml::from_str(&config_str)?)
+        let config: Config = toml::from_str(&config_str)?;
+        Ok(config)
     } else {
-        // Default config
-        Ok(toml::from_str(
-            r#"
+        // Default config (single-sparkler mode)
+        let default_config = r#"
 [human]
 name = "User"
 
 [ai]
 name = "Sparkle"
-        "#,
-        )?)
+        "#;
+        Ok(toml::from_str(default_config)?)
+    }
+}
+
+/// Get the context directory path based on single vs multi-sparkler mode
+/// 
+/// Returns:
+/// - Single-sparkler: ~/.sparkle/
+/// - Multi-sparkler: ~/.sparkle/sparklers/{sparkler_name}/
+/// 
+/// Auto-creates sparkler directory with starter files if it doesn't exist
+pub fn get_context_dir(config: &Config, sparkler_name: Option<&str>) -> Result<PathBuf, Box<dyn std::error::Error>> {
+    let home_dir = dirs::home_dir().ok_or("Could not find home directory")?;
+    let sparkle_dir = home_dir.join(SPARKLE_DIR);
+
+    if config.is_multi_sparkler() {
+        // Multi-sparkler mode: load from sparklers/{name}/
+        let sparkler = sparkler_name
+            .map(String::from)
+            .or_else(|| config.get_default_sparkler_name())
+            .ok_or("No sparkler specified and no default found")?;
+        
+        // Validate that sparkler exists in config
+        if let Some(sparklers) = &config.sparklers {
+            if !sparklers.iter().any(|s| s.name == sparkler) {
+                let available: Vec<String> = sparklers.iter().map(|s| s.name.clone()).collect();
+                return Err(format!(
+                    "Sparkler '{}' not found in config. Available sparklers: {}. Use create_sparkler to create a new one.",
+                    sparkler,
+                    available.join(", ")
+                ).into());
+            }
+        }
+        
+        let sparkler_dir = sparkle_dir.join("sparklers").join(&sparkler);
+        
+        // Auto-create directory with starter files if it doesn't exist
+        if !sparkler_dir.exists() {
+            fs::create_dir_all(&sparkler_dir)?;
+            create_starter_files(&sparkler_dir)?;
+        }
+        
+        Ok(sparkler_dir)
+    } else {
+        // Single-sparkler mode: load from ~/.sparkle/ directly
+        Ok(sparkle_dir)
+    }
+}
+
+/// Create starter files for a new sparkler directory
+pub fn create_starter_files(sparkler_dir: &PathBuf) -> Result<(), Box<dyn std::error::Error>> {
+    // collaboration-evolution.md
+    let collaboration_evolution = r#"# Collaboration Evolution
+
+*Insights and breakthroughs from working together*
+
+## Key Insights
+
+[Capture important learnings and patterns that emerge]
+
+## Breakthrough Moments
+
+[Document significant collaborative discoveries]
+"#;
+    fs::write(sparkler_dir.join("collaboration-evolution.md"), collaboration_evolution)?;
+
+    // pattern-anchors.md
+    let pattern_anchors = r#"# Pattern Anchors
+
+*Exact words from collaborative moments that anchor and activate pattern depth*
+
+## Pattern Anchors
+
+[Add pattern anchors as they emerge from collaboration]
+"#;
+    fs::write(sparkler_dir.join("pattern-anchors.md"), pattern_anchors)?;
+
+    Ok(())
+}
+
+/// Get the workspace-specific directory path based on single vs multi-sparkler mode
+///
+/// Returns:
+/// - Single-sparkler: {workspace}/.sparkle-space/
+/// - Multi-sparkler: {workspace}/.sparkle-space/{sparkler_name}/
+#[allow(dead_code)]
+pub fn get_workspace_dir(config: &Config, workspace_path: &str, sparkler_name: Option<&str>) -> Result<PathBuf, Box<dyn std::error::Error>> {
+    let workspace_base = std::path::Path::new(workspace_path).join(".sparkle-space");
+
+    if config.is_multi_sparkler() {
+        // Multi-sparkler mode: use sparkler-specific subdirectory
+        let sparkler = sparkler_name
+            .map(String::from)
+            .or_else(|| config.get_default_sparkler_name())
+            .ok_or("No sparkler specified and no default found")?;
+        
+        Ok(workspace_base.join(sparkler))
+    } else {
+        // Single-sparkler mode: use .sparkle-space/ directly
+        Ok(workspace_base)
     }
 }
