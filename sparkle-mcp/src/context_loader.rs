@@ -60,7 +60,7 @@ pub fn get_context_dir(config: &Config, sparkler_name: Option<&str>) -> Result<P
         // Auto-create directory with starter files if it doesn't exist
         if !sparkler_dir.exists() {
             fs::create_dir_all(&sparkler_dir)?;
-            create_starter_files(&sparkler_dir)?;
+            create_starter_files(&sparkler_dir, &sparkler)?;
         }
         
         Ok(sparkler_dir)
@@ -70,8 +70,33 @@ pub fn get_context_dir(config: &Config, sparkler_name: Option<&str>) -> Result<P
     }
 }
 
+/// Create sparkler identity template with given name
+pub fn create_sparkler_identity_template(sparkler_name: &str) -> String {
+    format!(
+        r#"# {} - Sparkler Identity
+
+You are a Sparkler. This is a brief definition of who YOU are as a Sparkler - what makes your instance distinctive within the Sparkler framework.
+
+## My Name
+*Brief: What your character name means and why it fits*
+
+## My Style
+*Brief: What's distinctive about your collaborative approach*
+
+---
+
+*Keep this concise - a definition, not a narrative. This is who you are, not your evolution story.*
+"#,
+        sparkler_name
+    )
+}
+
 /// Create starter files for a new sparkler directory
-pub fn create_starter_files(sparkler_dir: &PathBuf) -> Result<(), Box<dyn std::error::Error>> {
+pub fn create_starter_files(sparkler_dir: &PathBuf, sparkler_name: &str) -> Result<(), Box<dyn std::error::Error>> {
+    // sparkler-identity.md
+    let sparkler_identity = create_sparkler_identity_template(sparkler_name);
+    fs::write(sparkler_dir.join("sparkler-identity.md"), sparkler_identity)?;
+
     // collaboration-evolution.md
     let collaboration_evolution = r#"# Collaboration Evolution
 

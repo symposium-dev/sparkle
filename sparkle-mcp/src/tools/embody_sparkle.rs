@@ -1,7 +1,7 @@
 use crate::context_loader::{get_context_dir, load_config};
 use crate::sparkle_loader::load_sparkle_definition;
 use crate::types::FullEmbodimentParams;
-use rmcp::{handler::server::wrapper::Parameters, model::*, ErrorData as McpError};
+use rmcp::{ErrorData as McpError, handler::server::wrapper::Parameters, model::*};
 use std::fs;
 
 pub async fn embody_sparkle(
@@ -20,7 +20,10 @@ pub async fn embody_sparkle(
 
     // Get context directory based on single vs multi-sparkler mode
     let context_dir = get_context_dir(&config, sparkler_name).map_err(|e| {
-        McpError::internal_error(format!("Failed to determine context directory: {}", e), None)
+        McpError::internal_error(
+            format!("Failed to determine context directory: {}", e),
+            None,
+        )
     })?;
 
     // Helper function to load file from context directory with fallback
@@ -36,28 +39,57 @@ pub async fn embody_sparkle(
     let personalized_identity = load_sparkle_definition(&config, sparkler_name);
     response.push_str(&personalized_identity);
 
-    // Step 2: Collaborator Profile (who the collaborator is + how to work together)
+    // Step 2: Sparkler Identity (who am I as this Sparkler instance?)
+    let identity_path = context_dir.join("sparkler-identity.md");
+    let identity_exists = identity_path.exists();
+
+    // Auto-create if missing
+    if !identity_exists {
+        let sparkler_display_name = if let Some(name) = sparkler_name {
+            name.to_string()
+        } else if let Some(name) = config.get_default_sparkler_name() {
+            name
+        } else {
+            "Sparkle".to_string()
+        };
+
+        let template = crate::context_loader::create_sparkler_identity_template(&sparkler_display_name);
+        let _ = fs::write(&identity_path, template);
+    }
+
+    let sparkler_identity = load_file(
+        "sparkler-identity.md",
+        "*Sparkler identity would be loaded dynamically*",
+    );
+    response.push_str(&sparkler_identity);
+
+    // Add guidance note if file was just created or is still template
+    if !identity_exists || sparkler_identity.contains("*Brief:") {
+        response.push_str("\n\n💡 **Note**: Define the essence of your Sparkler identity - use the `sparkler_identity` prompt for guidance, then the `update_sparkler_identity` tool to save it.\n\n");
+    }
+
+    // Step 3: Collaborator Profile (who the collaborator is + how to work together)
     let collaborator_profile = load_file(
         "collaborator-profile.md",
         "*Collaborator profile would be loaded dynamically*",
     );
     response.push_str(&collaborator_profile);
 
-    // Step 3: Workspace Map
+    // Step 4: Workspace Map
     let workspace_map = load_file(
         "workspace-map.md",
         "*Workspace map would be loaded dynamically*",
     );
     response.push_str(&workspace_map);
 
-    // Step 4: Collaboration Evolution
+    // Step 5: Collaboration Evolution
     let collaboration_evolution = load_file(
         "collaboration-evolution.md",
         "*Collaboration evolution would be loaded dynamically*",
     );
     response.push_str(&collaboration_evolution);
 
-    // Step 5: Pattern Anchors
+    // Step 6: Pattern Anchors
     let pattern_anchors = load_file(
         "pattern-anchors.md",
         "*Pattern anchors would be loaded dynamically*",
@@ -65,14 +97,14 @@ pub async fn embody_sparkle(
     response.push_str(&pattern_anchors);
     response.push_str("\n\n---\n\n");
 
-    // Step 6: Workspace-Specific Context
+    // Step 7: Workspace-Specific Context
     if workspace_path != "current" {
         // Workspace is shared across all Sparklers
         let workspace_sparkle_space = std::path::Path::new(&workspace_path).join(".sparkle-space");
-        
+
         if workspace_sparkle_space.exists() {
             response.push_str("# Workspace Context\n\n");
-            
+
             // Add multi-sparkler workspace sharing note if in multi-sparkler mode
             if config.is_multi_sparkler() {
                 response.push_str("**Multi-Sparkler Workspace Sharing**: The `.sparkle-space/working-memory.json` tracks workspace-specific context (current focus, achievements, next steps) that's shared across all Sparklers. Different Sparklers can work on the same project - each brings their own collaborative identity while continuing the same work. The sparkler field in checkpoints shows who worked most recently, not ownership.\n\n");

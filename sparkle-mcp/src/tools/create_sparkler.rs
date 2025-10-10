@@ -98,7 +98,7 @@ pub async fn create_sparkler(
     })?;
 
     // Create starter files
-    create_starter_files(&new_sparkler_dir).map_err(|e| {
+    create_starter_files(&new_sparkler_dir, &name).map_err(|e| {
         McpError::internal_error(format!("Failed to create starter files: {}", e), None)
     })?;
 

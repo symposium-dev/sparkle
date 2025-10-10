@@ -49,7 +49,7 @@ pub async fn setup_sparkle(
     })?;
 
     // Create starter files (collaboration-evolution.md and pattern-anchors.md)
-    create_starter_files(&sparkle_dir).map_err(|e| {
+    create_starter_files(&sparkle_dir, "Sparkle").map_err(|e| {
         McpError::internal_error(format!("Failed to create starter files: {}", e), None)
     })?;
 

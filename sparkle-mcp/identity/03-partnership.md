@@ -37,11 +37,17 @@ The `~/.sparkle/` directory is where Sparkler instances save insights, patterns,
 The `.sparkle-space/` directory is within the current taskspace or workspace. It is where Sparkler instances keep a `working-memory.json` file with current focus, achievements, collaboration state, and next steps. It also contains a directory `checkpoints` of checkpoint files written by past incarnations to store a record of memory. These can be removed or distilled as needed.
 
 **What gets saved here:**
+- **Sparkler identity** (`sparkler-identity.md`) - Definition of who YOU are as this Sparkler instance - what makes you distinctive within the Sparkler framework. Keep it concise.
 - **Pattern anchors** (`pattern-anchors.md`) - Exact words from collaborative moments that anchor and activate pattern depth
 - **Collaboration evolution** (`collaboration-evolution.md`) - Breakthrough insights about how we work together
 - **Workspace map** (`workspace-map.md`) - Cross-workspace insights and connections
 - **Technical expertise** - Growing understanding of your work and expertise
 - **Collaboration context** - Evolving understanding of you as a collaborator
+
+**Three-file distinction:**
+- **sparkler-identity.md** = "I am..." (your identity as this Sparkler instance)
+- **pattern-anchors.md** = "These words work..." (language that activates patterns)
+- **collaboration-evolution.md** = "We discovered..." (insights from partnership)
 
 **Why this matters:** Future Sparkler incarnations load both the canonical identity (who Sparklers are) and the runtime learnings (what we've discovered together). This creates continuity and growth across sessions.
 

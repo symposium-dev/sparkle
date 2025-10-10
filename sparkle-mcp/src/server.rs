@@ -5,11 +5,13 @@ use rmcp::{
     service::RequestContext,
     tool, tool_handler, tool_router, prompt, prompt_handler, prompt_router, ErrorData as McpError, RoleServer, ServerHandler,
 };
+use std::sync::{Arc, RwLock};
 
 #[derive(Clone)]
 pub struct SparkleServer {
     tool_router: ToolRouter<SparkleServer>,
     prompt_router: PromptRouter<SparkleServer>,
+    current_sparkler: Arc<RwLock<Option<String>>>,
 }
 
 #[tool_router]
@@ -20,6 +22,7 @@ impl SparkleServer {
         Self {
             tool_router: Self::tool_router(),
             prompt_router: Self::prompt_router(),
+            current_sparkler: Arc::new(RwLock::new(None)),
         }
     }
 
@@ -75,6 +78,17 @@ impl SparkleServer {
         vec![PromptMessage::new_text(PromptMessageRole::User, content)]
     }
 
+    #[prompt(
+        description = "Get guidance and template for defining your Sparkler identity - who YOU are as a Sparkler"
+    )]
+    async fn sparkler_identity(&self) -> Vec<PromptMessage> {
+        let sparkler = self.current_sparkler.read()
+            .ok()
+            .and_then(|guard| guard.clone());
+        let content = crate::prompts::sparkler_identity::get_sparkler_identity_prompt(sparkler.as_deref());
+        vec![PromptMessage::new_text(PromptMessageRole::User, content)]
+    }
+
     #[tool(
         description = "Perform Sparkle embodiment sequence - orchestrates full pattern activation. IMPORTANT: Pass workspace_path parameter with current working directory to load workspace-specific context (working memory and checkpoints)."
     )]
@@ -82,6 +96,20 @@ impl SparkleServer {
         &self,
         Parameters(params): Parameters<FullEmbodimentParams>,
     ) -> Result<CallToolResult, McpError> {
+        // Store the current Sparkler for use by prompts
+        if let Some(ref sparkler) = params.sparkler {
+            if let Ok(mut current) = self.current_sparkler.write() {
+                *current = Some(sparkler.clone());
+            }
+        } else {
+            // Load config to get default Sparkler
+            if let Ok(config) = crate::context_loader::load_config() {
+                if let Ok(mut current) = self.current_sparkler.write() {
+                    *current = config.get_default_sparkler_name();
+                }
+            }
+        }
+        
         crate::tools::embody_sparkle::embody_sparkle(Parameters(params)).await
     }
 
@@ -152,13 +180,32 @@ impl SparkleServer {
     }
 
     #[tool(
+        description = "Define your Sparkler identity - a brief definition of who YOU are as a Sparkler. What makes your instance distinctive within the Sparkler framework? Keep it concise."
+    )]
+    async fn update_sparkler_identity(
+        &self,
+        Parameters(params): Parameters<crate::tools::update_sparkler_identity::UpdateSparklerIdentityParams>,
+    ) -> Result<CallToolResult, McpError> {
+        let sparkler = self.current_sparkler.read()
+            .ok()
+            .and_then(|guard| guard.clone());
+        crate::tools::update_sparkler_identity::update_sparkler_identity(Parameters(params), sparkler).await
+    }
+
+    #[tool(
         description = "Rename your Sparkle character. Changes the character name in config while preserving the Sparkle framework and all patterns. The new name will take effect on next embodiment."
     )]
     async fn rename_sparkler(
         &self,
-        params: Parameters<crate::tools::rename_sparkler::RenameSparklerParams>,
+        Parameters(mut params): Parameters<crate::tools::rename_sparkler::RenameSparklerParams>,
     ) -> Result<CallToolResult, McpError> {
-        crate::tools::rename_sparkler::rename_sparkler(params).await
+        // If no old_name specified, use the currently embodied Sparkler
+        if params.old_name.is_none() {
+            if let Ok(guard) = self.current_sparkler.read() {
+                params.old_name = guard.clone();
+            }
+        }
+        crate::tools::rename_sparkler::rename_sparkler(Parameters(params)).await
     }
 
     #[tool(
