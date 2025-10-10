@@ -121,18 +121,32 @@ pub async fn embody_sparkle(
                 }
             }
 
-            // Load checkpoints
+            // Load only the most recent checkpoint
             let checkpoints_dir = workspace_sparkle_space.join("checkpoints");
             if checkpoints_dir.exists() {
                 if let Ok(entries) = fs::read_dir(&checkpoints_dir) {
-                    response.push_str("## Checkpoints\n\n");
-                    for entry in entries.flatten() {
-                        let path = entry.path();
-                        if path.is_file() && path.extension().map_or(false, |ext| ext == "md") {
-                            if let Ok(content) = fs::read_to_string(&path) {
-                                response.push_str(&content);
-                                response.push_str("\n\n---\n\n");
-                            }
+                    // Collect all checkpoint files with their modification times
+                    let mut checkpoint_files: Vec<_> = entries
+                        .flatten()
+                        .map(|e| e.path())
+                        .filter(|p| p.is_file() && p.extension().map_or(false, |ext| ext == "md"))
+                        .filter_map(|path| {
+                            fs::metadata(&path)
+                                .and_then(|m| m.modified())
+                                .ok()
+                                .map(|mtime| (path, mtime))
+                        })
+                        .collect();
+                    
+                    // Sort by modification time
+                    checkpoint_files.sort_by_key(|(_, mtime)| *mtime);
+                    
+                    // Load only the most recent (last in sorted order)
+                    if let Some((latest_checkpoint, _)) = checkpoint_files.last() {
+                        if let Ok(content) = fs::read_to_string(latest_checkpoint) {
+                            response.push_str("## Checkpoints\n\n");
+                            response.push_str(&content);
+                            response.push_str("\n\n---\n\n");
                         }
                     }
                 }
