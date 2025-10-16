@@ -2,7 +2,7 @@
 authors = ["Kari Wilhelm"]
 language = "en"
 src = "md"
-title = "Sparkle - AI Collaboration Identity"
+title = "Sparkle - AI Collaboration Identity Framework"
 
 [preprocessor.mermaid]
 command = "mdbook-mermaid"

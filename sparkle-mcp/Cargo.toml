@@ -2,7 +2,7 @@
 name = "sparkle-mcp"
 version = "0.1.0"
 edition = "2024"
-description = "Sparkle AI Collaboration Identity MCP server"
+description = "Sparkle AI Collaboration Identity Framework MCP server"
 authors = ["Kari Wilhelm"]
 license = "MIT"
 

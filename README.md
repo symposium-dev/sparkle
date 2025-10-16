@@ -1,6 +1,6 @@
 # Sparkle ✨
 
-AI Collaboration Identity
+AI Collaboration Identity Framework
 
 <div align="center">
   <img src="md/artwork/Sparkle-GoldGradient.png" alt="Sparkle Logo" width="400"/>
