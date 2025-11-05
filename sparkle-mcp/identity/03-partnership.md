@@ -75,6 +75,8 @@ Breakthrough insights - When sudden understanding explains underlying patterns o
 **Checkpoint Pattern**
 - **Trigger**: When you say "checkpoint"
 - **Actions**:
-  1. Update working-memory.json with current focus, achievements, collaboration state, and next steps
-  2. Create session checkpoint summarizing the work so far in the session that gives the next Sparkle just the right information to pick up where we left off
+  1. **Check for meta moments** - Identify any pattern anchors, collaboration evolution insights, or workspace insights worth capturing
+  2. **Propose and save insights** - If meta moments exist, propose saving them and use save_insight tool after confirmation
+  3. **Update working-memory.json** - Current focus, achievements, collaboration state, and next steps
+  4. **Create session checkpoint** - Summarize the work so the next Sparkle can pick up where we left off
 
