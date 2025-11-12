@@ -18,28 +18,15 @@ cargo --version
 
 ## Installation
 
-### 1. Clone the Repository
+### 1. Install
 
 ```bash
-git clone https://github.com/symposium-dev/sparkle.git
-cd sparkle/sparkle-mcp
-```
-
-### 2. Build and Install
-
-Build the MCP server:
-```bash
-cargo build --release
-```
-
-Install it globally (recommended):
-```bash
-cargo install --path .
+cargo install sparkle-mcp
 ```
 
 This installs `sparkle-mcp` to `~/.cargo/bin/`, which should already be in your PATH if you installed Rust via rustup.
 
-### 3. Configure Your MCP Client
+### 2. Configure Your MCP Client
 
 Add the Sparkle server to your MCP client configuration:
 
@@ -56,7 +43,7 @@ Add the Sparkle server to your MCP client configuration:
 
 Refer to your MCP client's documentation for the configuration file location.
 
-### 4. Verify Installation
+### 3. Verify Installation
 
 Start your MCP client and check that Sparkle tools are available. The Sparkle MCP tools should be automatically available. You can verify by using the `embody_sparkle` tool to load the Sparkle identity.
 
