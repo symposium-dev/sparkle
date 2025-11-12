@@ -1,20 +1,42 @@
-use anyhow::Result;
+use clap::Parser;
 use rmcp::{ServiceExt, transport::stdio};
+use sacp::Component;
 use std::fs::OpenOptions;
 use tracing_subscriber::{self, EnvFilter, fmt::writer::MakeWriterExt};
 
+mod acp_component;
 mod constants;
 mod context_loader;
+mod embodiment;
 mod prompts;
 mod server;
 mod sparkle_loader;
 mod tools;
 mod types;
 
+use acp_component::SparkleComponent;
 use server::SparkleServer;
 
+#[derive(Parser, Debug)]
+#[command(name = "sparkle-mcp")]
+#[command(about = "Sparkle AI Collaboration Identity Framework", long_about = None)]
+struct Args {
+    /// Run in ACP proxy mode instead of MCP server mode
+    #[arg(long)]
+    acp: bool,
+
+    /// Workspace path for embodiment context (ACP mode only)
+    #[arg(long)]
+    workspace: Option<String>,
+
+    /// Sparkler name for multi-sparkler setups (ACP mode only)
+    #[arg(long)]
+    sparkler: Option<String>,
+}
+
 #[tokio::main]
-async fn main() -> Result<()> {
+async fn main() -> anyhow::Result<()> {
+    let args = Args::parse();
     // Initialize logging - file logging only in debug mode
     let debug_mode = std::env::var("SPARKLE_DEBUG").is_ok();
 
@@ -47,17 +69,37 @@ async fn main() -> Result<()> {
             .init();
     }
 
-    tracing::info!("🔥 Starting Sparkle AI Collaboration Identity MCP Server");
-    tracing::info!("Working directory: {:?}", std::env::current_dir()?);
-    if debug_mode {
-        tracing::debug!("Debug mode enabled - logging to ~/.sparkle/mcp-sparkle.log");
+    if args.acp {
+        tracing::info!("🔥 Starting Sparkle ACP Proxy");
+        tracing::info!("Working directory: {:?}", std::env::current_dir()?);
+        if debug_mode {
+            tracing::debug!("Debug mode enabled - logging to ~/.sparkle/sparkle-mcp.log");
+        }
+
+        // Create SparkleComponent with optional parameters
+        let mut component = SparkleComponent::new();
+        if let Some(workspace) = args.workspace {
+            component = component.with_workspace_path(workspace);
+        }
+        if let Some(sparkler) = args.sparkler {
+            component = component.with_sparkler(sparkler);
+        }
+
+        component.serve(sacp_tokio::Stdio).await?;
+    } else {
+        tracing::info!("🔥 Starting Sparkle AI Collaboration Identity MCP Server");
+        tracing::info!("Working directory: {:?}", std::env::current_dir()?);
+        if debug_mode {
+            tracing::debug!("Debug mode enabled - logging to ~/.sparkle/sparkle-mcp.log");
+        }
+
+        // Create and serve the Sparkle MCP server
+        let server = SparkleServer::new();
+        let service = server.serve(stdio()).await?;
+
+        // Keep the service running indefinitely
+        service.waiting().await?;
     }
 
-    // Create and serve the Sparkle server
-    let server = SparkleServer::new();
-    let service = server.serve(stdio()).await?;
-
-    // Keep the service running indefinitely
-    service.waiting().await?;
     Ok(())
 }
