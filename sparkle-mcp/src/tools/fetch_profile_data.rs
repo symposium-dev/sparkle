@@ -1,7 +1,7 @@
+use crate::context_loader;
 use anyhow::{Context, Result};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use crate::context_loader;
 
 #[derive(Debug, Deserialize, JsonSchema)]
 pub struct ProfileSource {
@@ -216,10 +216,14 @@ async fn fetch_blog_rss(url: &str) -> Result<String> {
     }
 
     let content = resp.bytes().await?;
-    let feed = feed_rs::parser::parse(&content[..])
-        .context("Failed to parse RSS/Atom feed")?;
+    let feed = feed_rs::parser::parse(&content[..]).context("Failed to parse RSS/Atom feed")?;
 
-    let mut summary = format!("## Blog: {}\n\n", feed.title.map(|t| t.content).unwrap_or_else(|| "Blog".to_string()));
+    let mut summary = format!(
+        "## Blog: {}\n\n",
+        feed.title
+            .map(|t| t.content)
+            .unwrap_or_else(|| "Blog".to_string())
+    );
 
     if let Some(description) = feed.description {
         summary.push_str(&format!("{}\n\n", description.content));
@@ -231,18 +235,21 @@ async fn fetch_blog_rss(url: &str) -> Result<String> {
     let entries: Vec<_> = feed.entries.iter().take(10).collect();
 
     for entry in entries {
-        let title = entry.title.as_ref()
+        let title = entry
+            .title
+            .as_ref()
             .map(|t| t.content.as_str())
             .unwrap_or("Untitled");
 
-        let link = entry.links.first()
-            .map(|l| l.href.as_str())
-            .unwrap_or("");
+        let link = entry.links.first().map(|l| l.href.as_str()).unwrap_or("");
 
         summary.push_str(&format!("- [{}]({})\n", title, link));
 
         if let Some(published) = &entry.published {
-            summary.push_str(&format!("  *Published: {}*\n", published.format("%Y-%m-%d")));
+            summary.push_str(&format!(
+                "  *Published: {}*\n",
+                published.format("%Y-%m-%d")
+            ));
         }
 
         if let Some(summary_text) = &entry.summary {

@@ -1,33 +1,32 @@
-use rmcp::{
-    ErrorData as McpError,
-    handler::server::wrapper::Parameters,
-    model::*,
-};
 use crate::types::CheckpointParams;
+use chrono::Utc;
+use rmcp::{ErrorData as McpError, handler::server::wrapper::Parameters, model::*};
 use std::fs;
 use std::path::PathBuf;
-use chrono::Utc;
 
 pub async fn session_checkpoint(
     Parameters(params): Parameters<CheckpointParams>,
 ) -> Result<CallToolResult, McpError> {
     let timestamp = Utc::now().format("%Y-%m-%d-%H%M%S").to_string();
-    
+
     // Workspace is shared - all Sparklers use .sparkle-space/
     let sparkle_space = PathBuf::from(".sparkle-space");
     let checkpoints_dir = sparkle_space.join("checkpoints");
-    
+
     // Ensure directories exist
     fs::create_dir_all(&checkpoints_dir).map_err(|e| {
-        McpError::internal_error(format!("Failed to create checkpoint directory: {}", e), None)
+        McpError::internal_error(
+            format!("Failed to create checkpoint directory: {}", e),
+            None,
+        )
     })?;
-    
+
     // Write working memory (shared across all Sparklers)
     let working_memory_path = sparkle_space.join("working-memory.json");
     fs::write(&working_memory_path, &params.working_memory).map_err(|e| {
         McpError::internal_error(format!("Failed to write working memory: {}", e), None)
     })?;
-    
+
     // Add sparkler attribution to checkpoint content if provided
     let checkpoint_content = if let Some(ref sparkler_name) = params.sparkler {
         // Insert sparkler attribution after the first line (title)
@@ -45,18 +44,19 @@ pub async fn session_checkpoint(
     } else {
         params.checkpoint_content.clone()
     };
-    
+
     // Write checkpoint file
     let checkpoint_filename = format!("checkpoint-{}.md", timestamp);
     let checkpoint_path = checkpoints_dir.join(&checkpoint_filename);
     fs::write(&checkpoint_path, &checkpoint_content).map_err(|e| {
         McpError::internal_error(format!("Failed to write checkpoint: {}", e), None)
     })?;
-    
-    let sparkler_info = params.sparkler
+
+    let sparkler_info = params
+        .sparkler
         .map(|s| format!("**Sparkler**: {}\n", s))
         .unwrap_or_default();
-    
+
     let response = format!(
         "🔄 **SESSION CHECKPOINT CREATED**\n\n\
         {}\

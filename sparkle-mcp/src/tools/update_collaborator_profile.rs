@@ -1,8 +1,8 @@
 use crate::constants::SPARKLE_DIR;
 use rmcp::{
+    ErrorData as McpError,
     handler::server::wrapper::Parameters,
     model::{CallToolResult, Content},
-    ErrorData as McpError,
 };
 use schemars::JsonSchema;
 use serde::Deserialize;
@@ -17,16 +17,15 @@ pub async fn update_collaborator_profile(
     Parameters(params): Parameters<UpdateCollaboratorProfileParams>,
 ) -> Result<CallToolResult, McpError> {
     // Get home directory
-    let home_dir = dirs::home_dir().ok_or_else(|| {
-        McpError::internal_error("Could not determine home directory", None)
-    })?;
+    let home_dir = dirs::home_dir()
+        .ok_or_else(|| McpError::internal_error("Could not determine home directory", None))?;
 
     let sparkle_dir = home_dir.join(SPARKLE_DIR);
 
     // Check if sparkle directory exists
     if !sparkle_dir.exists() {
         return Ok(CallToolResult::error(vec![Content::text(
-            "Please run the sparkle tool first to initialize your Sparkle profile."
+            "Please run the sparkle tool first to initialize your Sparkle profile.",
         )]));
     }
 
@@ -45,7 +44,8 @@ pub async fn update_collaborator_profile(
             )
         })?;
 
-        let backup_display = backup_path.strip_prefix(&home_dir)
+        let backup_display = backup_path
+            .strip_prefix(&home_dir)
             .map(|p| format!("~/{}", p.display()))
             .unwrap_or_else(|_| backup_path.display().to_string());
 
@@ -63,7 +63,8 @@ pub async fn update_collaborator_profile(
     })?;
 
     // Return success message
-    let file_display = file_path.strip_prefix(&home_dir)
+    let file_display = file_path
+        .strip_prefix(&home_dir)
         .map(|p| format!("~/{}", p.display()))
         .unwrap_or_else(|_| file_path.display().to_string());
 

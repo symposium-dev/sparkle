@@ -1,6 +1,6 @@
 use crate::constants::SPARKLE_DIR;
 use crate::types::LoadEvolutionParams;
-use rmcp::{handler::server::wrapper::Parameters, model::*, ErrorData as McpError};
+use rmcp::{ErrorData as McpError, handler::server::wrapper::Parameters, model::*};
 use std::fs;
 
 pub async fn load_evolution(

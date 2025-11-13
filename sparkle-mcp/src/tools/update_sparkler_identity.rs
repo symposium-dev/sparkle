@@ -1,5 +1,7 @@
 use crate::context_loader::{get_context_dir, load_config};
-use rmcp::{handler::server::wrapper::Parameters, model::*, ErrorData as McpError, schemars::JsonSchema};
+use rmcp::{
+    ErrorData as McpError, handler::server::wrapper::Parameters, model::*, schemars::JsonSchema,
+};
 use serde::{Deserialize, Serialize};
 use std::fs;
 
@@ -13,9 +15,8 @@ pub async fn update_sparkler_identity(
     Parameters(params): Parameters<UpdateSparklerIdentityParams>,
     sparkler: Option<String>,
 ) -> Result<CallToolResult, McpError> {
-    let config = load_config().map_err(|e| {
-        McpError::internal_error(format!("Failed to load config: {}", e), None)
-    })?;
+    let config = load_config()
+        .map_err(|e| McpError::internal_error(format!("Failed to load config: {}", e), None))?;
 
     let context_dir = get_context_dir(&config, sparkler.as_deref()).map_err(|e| {
         McpError::internal_error(format!("Failed to get context directory: {}", e), None)

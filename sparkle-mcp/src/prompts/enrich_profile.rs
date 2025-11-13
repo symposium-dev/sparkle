@@ -1,4 +1,3 @@
-
 #[allow(dead_code)]
 pub(crate) fn get_enrich_profile_prompt() -> String {
     "To enrich the collaborator profile:\n\n\

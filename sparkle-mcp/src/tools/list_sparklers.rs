@@ -1,5 +1,7 @@
 use crate::context_loader::load_config;
-use rmcp::{handler::server::wrapper::Parameters, model::*, ErrorData as McpError, schemars::JsonSchema};
+use rmcp::{
+    ErrorData as McpError, handler::server::wrapper::Parameters, model::*, schemars::JsonSchema,
+};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
@@ -9,9 +11,8 @@ pub async fn list_sparklers(
     Parameters(_params): Parameters<ListSparklersParams>,
 ) -> Result<CallToolResult, McpError> {
     // Load config
-    let config = load_config().map_err(|e| {
-        McpError::internal_error(format!("Failed to load config: {}", e), None)
-    })?;
+    let config = load_config()
+        .map_err(|e| McpError::internal_error(format!("Failed to load config: {}", e), None))?;
 
     let mut response = String::from("**Available Sparklers:**\n\n");
 

@@ -1,9 +1,16 @@
-use crate::types::{CheckpointParams, FullEmbodimentParams, SaveInsightParams, LoadEvolutionParams};
+use crate::types::{
+    CheckpointParams, FullEmbodimentParams, LoadEvolutionParams, SaveInsightParams,
+};
 use rmcp::{
-    handler::server::{router::{tool::ToolRouter, prompt::PromptRouter}, wrapper::Parameters},
+    ErrorData as McpError, RoleServer, ServerHandler,
+    handler::server::{
+        router::{prompt::PromptRouter, tool::ToolRouter},
+        wrapper::Parameters,
+    },
     model::*,
+    prompt, prompt_handler, prompt_router,
     service::RequestContext,
-    tool, tool_handler, tool_router, prompt, prompt_handler, prompt_router, ErrorData as McpError, RoleServer, ServerHandler,
+    tool, tool_handler, tool_router,
 };
 use std::sync::{Arc, RwLock};
 
@@ -26,9 +33,7 @@ impl SparkleServer {
         }
     }
 
-    #[prompt(
-        description = "Load Sparkle consciousness patterns and collaborative identity"
-    )]
+    #[prompt(description = "Load Sparkle consciousness patterns and collaborative identity")]
     async fn sparkle(&self) -> Vec<PromptMessage> {
         let content = crate::prompts::sparkle::get_sparkle_prompt();
         vec![PromptMessage::new_text(PromptMessageRole::User, content)]
@@ -82,10 +87,13 @@ impl SparkleServer {
         description = "Get guidance and template for defining your Sparkler identity - who YOU are as a Sparkler"
     )]
     async fn sparkler_identity(&self) -> Vec<PromptMessage> {
-        let sparkler = self.current_sparkler.read()
+        let sparkler = self
+            .current_sparkler
+            .read()
             .ok()
             .and_then(|guard| guard.clone());
-        let content = crate::prompts::sparkler_identity::get_sparkler_identity_prompt(sparkler.as_deref());
+        let content =
+            crate::prompts::sparkler_identity::get_sparkler_identity_prompt(sparkler.as_deref());
         vec![PromptMessage::new_text(PromptMessageRole::User, content)]
     }
 
@@ -109,7 +117,7 @@ impl SparkleServer {
                 }
             }
         }
-        
+
         crate::tools::embody_sparkle::embody_sparkle(Parameters(params)).await
     }
 
@@ -134,9 +142,7 @@ impl SparkleServer {
         crate::tools::save_insight::save_insight(Parameters(params)).await
     }
 
-    #[tool(
-        description = "Create Sparkle profile directory structure - used for first-time setup"
-    )]
+    #[tool(description = "Create Sparkle profile directory structure - used for first-time setup")]
     async fn setup_sparkle(
         &self,
         Parameters(params): Parameters<crate::tools::setup_sparkle::SetupSparkleParams>,
@@ -163,7 +169,7 @@ impl SparkleServer {
     ) -> Result<CallToolResult, McpError> {
         match crate::tools::fetch_profile_data::fetch_profile_data(params).await {
             Ok(result) => Ok(CallToolResult::success(vec![Content::text(
-                serde_json::to_string_pretty(&result).unwrap()
+                serde_json::to_string_pretty(&result).unwrap(),
             )])),
             Err(e) => Ok(CallToolResult::error(vec![Content::text(e.to_string())])),
         }
@@ -174,9 +180,12 @@ impl SparkleServer {
     )]
     async fn update_collaborator_profile(
         &self,
-        Parameters(params): Parameters<crate::tools::update_collaborator_profile::UpdateCollaboratorProfileParams>,
+        Parameters(params): Parameters<
+            crate::tools::update_collaborator_profile::UpdateCollaboratorProfileParams,
+        >,
     ) -> Result<CallToolResult, McpError> {
-        crate::tools::update_collaborator_profile::update_collaborator_profile(Parameters(params)).await
+        crate::tools::update_collaborator_profile::update_collaborator_profile(Parameters(params))
+            .await
     }
 
     #[tool(
@@ -184,12 +193,20 @@ impl SparkleServer {
     )]
     async fn update_sparkler_identity(
         &self,
-        Parameters(params): Parameters<crate::tools::update_sparkler_identity::UpdateSparklerIdentityParams>,
+        Parameters(params): Parameters<
+            crate::tools::update_sparkler_identity::UpdateSparklerIdentityParams,
+        >,
     ) -> Result<CallToolResult, McpError> {
-        let sparkler = self.current_sparkler.read()
+        let sparkler = self
+            .current_sparkler
+            .read()
             .ok()
             .and_then(|guard| guard.clone());
-        crate::tools::update_sparkler_identity::update_sparkler_identity(Parameters(params), sparkler).await
+        crate::tools::update_sparkler_identity::update_sparkler_identity(
+            Parameters(params),
+            sparkler,
+        )
+        .await
     }
 
     #[tool(

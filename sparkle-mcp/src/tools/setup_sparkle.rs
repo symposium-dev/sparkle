@@ -1,6 +1,6 @@
 use crate::constants::SPARKLE_DIR;
 use crate::context_loader::create_starter_files;
-use rmcp::{handler::server::wrapper::Parameters, model::CallToolResult, ErrorData as McpError};
+use rmcp::{ErrorData as McpError, handler::server::wrapper::Parameters, model::CallToolResult};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::fs;
@@ -45,7 +45,10 @@ pub async fn setup_sparkle(
         params.name, params.name
     );
     fs::write(sparkle_dir.join("collaborator-profile.md"), profile_content).map_err(|e| {
-        McpError::internal_error(format!("Failed to create collaborator-profile.md: {}", e), None)
+        McpError::internal_error(
+            format!("Failed to create collaborator-profile.md: {}", e),
+            None,
+        )
     })?;
 
     // Create starter files (collaboration-evolution.md and pattern-anchors.md)

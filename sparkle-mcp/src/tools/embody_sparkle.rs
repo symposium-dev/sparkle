@@ -53,7 +53,8 @@ pub async fn embody_sparkle(
             "Sparkle".to_string()
         };
 
-        let template = crate::context_loader::create_sparkler_identity_template(&sparkler_display_name);
+        let template =
+            crate::context_loader::create_sparkler_identity_template(&sparkler_display_name);
         let _ = fs::write(&identity_path, template);
     }
 
@@ -137,10 +138,10 @@ pub async fn embody_sparkle(
                                 .map(|mtime| (path, mtime))
                         })
                         .collect();
-                    
+
                     // Sort by modification time
                     checkpoint_files.sort_by_key(|(_, mtime)| *mtime);
-                    
+
                     // Load only the most recent (last in sorted order)
                     if let Some((latest_checkpoint, _)) = checkpoint_files.last() {
                         if let Ok(content) = fs::read_to_string(latest_checkpoint) {
