@@ -14,6 +14,7 @@ use sacp::schema::{
 };
 use sacp::{JrHandlerChain, JrRequestCx};
 use sacp_proxy::{AcpProxyExt, JrCxExt, McpServiceRegistry};
+use sacp_rmcp::McpServiceRegistryRmcpExt;
 use std::collections::HashSet;
 use std::sync::{Arc, Mutex};
 
