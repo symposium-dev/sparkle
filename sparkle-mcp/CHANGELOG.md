@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.2](https://github.com/symposium-dev/sparkle/compare/v0.1.1...v0.1.2) - 2025-11-14
+
+### Other
+
+- upgrade to sacp 1.0
+- bump sacp* to 1.x
+- Add ACP proxy mode to Sparkle with automatic embodiment injection
+
 ## [0.1.1](https://github.com/symposium-dev/sparkle/compare/v0.1.0...v0.1.1) - 2025-11-13
 
 ### Other
