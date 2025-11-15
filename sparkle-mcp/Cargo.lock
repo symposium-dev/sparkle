@@ -398,7 +398,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb"
 dependencies = [
  "libc",
- "windows-sys 0.61.1",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -1438,7 +1438,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys",
- "windows-sys 0.61.1",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -1532,9 +1532,9 @@ dependencies = [
 
 [[package]]
 name = "sacp-proxy"
-version = "1.0.0"
+version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a92cf0362dd4cd60ca4e5b41f34c0cb8ad1dca4c220664aca6060c3b026c0335"
+checksum = "c945d4966a01dd26bb0ff69f80c3089cd8be62d513be032d22edde084cda6340"
 dependencies = [
  "agent-client-protocol-schema",
  "futures",
@@ -1884,7 +1884,7 @@ dependencies = [
  "getrandom 0.3.3",
  "once_cell",
  "rustix",
- "windows-sys 0.61.1",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]

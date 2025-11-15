@@ -9,14 +9,83 @@ use crate::types::FullEmbodimentParams;
 use anyhow::Result;
 use sacp::component::Component;
 use sacp::schema::{
-    ContentChunk, PromptRequest, PromptResponse, SessionId, SessionNotification, SessionUpdate,
-    StopReason,
+    NewSessionRequest, NewSessionResponse, PromptRequest, PromptResponse, SessionId, StopReason,
 };
 use sacp::{JrHandlerChain, JrRequestCx};
 use sacp_proxy::{AcpProxyExt, JrCxExt, McpServiceRegistry};
 use sacp_rmcp::McpServiceRegistryRmcpExt;
 use std::collections::HashSet;
 use std::sync::{Arc, Mutex};
+use tokio::sync::Notify;
+
+/// Tracks sessions that are currently being embodied
+#[derive(Clone)]
+struct PendingEmbodimentRequests {
+    data: Arc<PendingEmbodimentRequestsData>,
+}
+
+struct PendingEmbodimentRequestsData {
+    map: Mutex<HashSet<SessionId>>,
+    notify: Notify,
+}
+
+impl PendingEmbodimentRequests {
+    fn new() -> Self {
+        Self {
+            data: Arc::new(PendingEmbodimentRequestsData {
+                map: Mutex::new(HashSet::new()),
+                notify: Notify::new(),
+            }),
+        }
+    }
+
+    /// Mark a session as pending embodiment
+    fn mark_as_pending(&self, session_id: SessionId) {
+        self.data
+            .map
+            .lock()
+            .expect("lock not poisoned")
+            .insert(session_id);
+    }
+
+    /// Signal that embodiment is complete for a session
+    fn signal_embodiment_completed(&self, session_id: &SessionId) {
+        self.data
+            .map
+            .lock()
+            .expect("lock not poisoned")
+            .remove(session_id);
+
+        // Notify all waiters after releasing the lock
+        self.data.notify.notify_waiters();
+    }
+
+    /// Wait for embodiment to complete if it's pending
+    async fn await_embodiment(&self, session_id: &SessionId) {
+        loop {
+            // Create the notified future BEFORE checking the condition
+            // This ensures we're registered for notifications before the condition can change
+            let notified = self.data.notify.notified();
+
+            // Check if this session is still pending
+            let is_pending = self
+                .data
+                .map
+                .lock()
+                .expect("lock not poisoned")
+                .contains(session_id);
+
+            if !is_pending {
+                // Embodiment already completed, we're done
+                return;
+            }
+
+            // Session is still pending, wait for notification
+            notified.await;
+            // Loop back to check again (in case multiple sessions completed)
+        }
+    }
+}
 
 /// Sparkle ACP Component that provides embodiment + MCP tools via proxy
 pub struct SparkleComponent {
@@ -56,18 +125,106 @@ impl Default for SparkleComponent {
 
 impl Component for SparkleComponent {
     async fn serve(self, client: impl Component) -> Result<(), sacp::Error> {
-        tracing::info!("Sparkle ACP proxy starting with embodiment injection");
+        tracing::info!("Sparkle ACP proxy starting with proactive embodiment");
 
         // Capture self fields before moving into closures
         let sparkler_name = self.sparkler.clone();
         let workspace_path = self.workspace_path.clone();
 
-        // Track which sessions have already been embodied
-        let embodied_sessions: Arc<Mutex<HashSet<SessionId>>> = Default::default();
+        // Track sessions that are currently being embodied
+        let pending_embodiments = PendingEmbodimentRequests::new();
 
         // Build the proxy handler chain
         JrHandlerChain::new()
             .name("sparkle-proxy")
+            // When we see a NewSessionRequest, forward it, get session_id, then send embodiment
+            // IMPORTANT: This must come BEFORE .provide_mcp() to intercept the request first
+            .on_receive_request({
+                let pending_embodiments = pending_embodiments.clone();
+                let sparkler_name = sparkler_name.clone();
+                let workspace_path = workspace_path.clone();
+                async move |request: NewSessionRequest,
+                            request_cx: JrRequestCx<NewSessionResponse>| {
+                    let connection_cx = request_cx.connection_cx();
+
+                    tracing::info!("Received NewSessionRequest");
+
+                    // Claim our own copies of the shared state
+                    // so that we can move them into the future later
+                    let pending_embodiments = pending_embodiments.clone();
+                    let sparkler_name = sparkler_name.clone();
+                    let workspace_path = workspace_path.clone();
+
+                    // Forward the NewSessionRequest to get a session_id
+                    connection_cx
+                        .send_request_to_successor(request)
+                        .await_when_ok_response_received(
+                            request_cx,
+                            async move |response, request_cx| {
+                                let session_id = response.session_id.clone();
+                                tracing::info!(
+                                    ?session_id,
+                                    "New session created, starting embodiment"
+                                );
+
+                                // Mark this session as pending embodiment
+                                pending_embodiments.mark_as_pending(session_id.clone());
+
+                                // Forward the response back to the client
+                                request_cx.respond(response)?;
+
+                                // Generate and send embodiment prompt
+                                let embodiment_content =
+                                    generate_embodiment_content(FullEmbodimentParams {
+                                        mode: Some("complete".to_string()),
+                                        workspace_path: workspace_path.clone(),
+                                        sparkler: sparkler_name.clone(),
+                                    })
+                                    .map_err(sacp::util::internal_error)?;
+
+                                connection_cx
+                                    .send_request_to_successor(PromptRequest {
+                                        session_id: session_id.clone(),
+                                        prompt: vec![embodiment_content.into()],
+                                        meta: None,
+                                    })
+                                    .await_when_result_received(async move |result| match result {
+                                        Ok(PromptResponse {
+                                            stop_reason: StopReason::EndTurn,
+                                            meta: _,
+                                        }) => {
+                                            tracing::info!(
+                                                ?session_id,
+                                                "Embodiment completed successfully"
+                                            );
+                                            pending_embodiments
+                                                .signal_embodiment_completed(&session_id);
+                                            Ok(())
+                                        }
+                                        Ok(PromptResponse {
+                                            stop_reason,
+                                            meta: _,
+                                        }) => {
+                                            tracing::warn!(
+                                                ?session_id,
+                                                ?stop_reason,
+                                                "Embodiment did not complete normally"
+                                            );
+                                            pending_embodiments
+                                                .signal_embodiment_completed(&session_id);
+                                            Err(sacp::util::internal_error("embodiment completed with abnormal result: {stop_reason:?}"))
+                                        }
+                                        Err(err) => {
+                                            tracing::error!(?session_id, ?err, "Embodiment failed");
+                                            pending_embodiments
+                                                .signal_embodiment_completed(&session_id);
+                                            Err(err)
+                                        }
+                                    })
+                            },
+                        )
+                }
+            })
             // Provide the Sparkle MCP server to session/new requests
             .provide_mcp(
                 McpServiceRegistry::default()
@@ -79,71 +236,32 @@ impl Component for SparkleComponent {
                         ))
                     })?,
             )
-
-            // When we see a PromptRequest, check if this is the first prompt for this session
+            // When we see a PromptRequest, wait for embodiment if it's pending
             .on_receive_request({
-                let embodied_sessions = embodied_sessions.clone();
-                let sparkler_name = sparkler_name.clone();
-                let workspace_path = workspace_path.clone();
+                let pending_embodiments = pending_embodiments.clone();
                 async move |request: PromptRequest, request_cx: JrRequestCx<PromptResponse>| {
                     let connection_cx = request_cx.connection_cx();
+                    let session_id = request.session_id.clone();
 
-                    tracing::info!(?request.session_id, "Received PromptRequest");
+                    tracing::info!(?session_id, "Received PromptRequest");
 
-                    // Check if this session has already been embodied
-                    // insert() returns true if the value was newly inserted (first time)
-                    let needs_embodiment = embodied_sessions.lock().expect("lock not poisoned").insert(request.session_id.clone());
+                    // Spawn a task so that we can await completion of embodiment
+                    // without stalling the main request handler.
+                    connection_cx.spawn({
+                        let connection_cx = connection_cx.clone();
+                        let pending_embodiments = pending_embodiments.clone();
+                        async move {
+                            // Wait for embodiment to complete if it's in progress
+                            pending_embodiments.await_embodiment(&session_id).await;
 
-                    tracing::info!(?request.session_id, needs_embodiment, "Checked for embodiment (true = first prompt)");
+                            tracing::info!(?session_id, "Embodiment check passed, forwarding prompt");
 
-                    if needs_embodiment {
-                        tracing::info!(
-                            ?request.session_id,
-                            "first prompt, injecting embodiment",
-                        );
-
-                        // Tell the user we are going to embody Sparkle
-                        let display_name = sparkler_name.as_deref().unwrap_or("Sparkle");
-                        connection_cx.send_notification(SessionNotification {
-                            session_id: request.session_id.clone(),
-                            update: SessionUpdate::AgentMessageChunk(ContentChunk {
-                                content: format!("Embodying {display_name}").into(),
-                                meta: None,
-                            }),
-                            meta: None,
-                        })?;
-
-                        // Generate embodiment content
-                        let embodiment_content = generate_embodiment_content(FullEmbodimentParams {
-                            mode: Some("complete".to_string()),
-                            workspace_path: workspace_path.clone(),
-                            sparkler: sparkler_name.clone(),
-                        }).map_err(sacp::util::internal_error)?;
-                        connection_cx.send_request_to_successor(PromptRequest {
-                            session_id: request.session_id.clone(),
-                            prompt: vec![embodiment_content.into()],
-                            meta: None,
-                        })
-                        .await_when_result_received(async move |result| {
-                            // While this request is going, any further session notifications will be proxied back to the user.
-                            match result {
-                                // If our prompt completes succcessfully, then send the user's *original* prompt next and forward the response.
-                                Ok(PromptResponse { stop_reason: StopReason::EndTurn, meta: _ }) => {
-                                    connection_cx.send_request_to_successor(request)
-                                        .forward_to_request_cx(request_cx)
-                                }
-
-                                // If we get back anything other than end-turn, just respond to the user to end this prompt.
-                                Ok(response @ PromptResponse { stop_reason: StopReason::Cancelled | StopReason::MaxTokens | StopReason::MaxTurnRequests | StopReason::Refusal,  meta: _ }) => {
-                                    request_cx.respond(response)
-                                }
-                                Err(err) => request_cx.respond_with_error(err),
-                            }
-                        })
-                    } else {
-                        connection_cx.send_request_to_successor(request)
+                            // Forward the prompt request
+                            connection_cx
+                                .send_request_to_successor(request)
                             .forward_to_request_cx(request_cx)
-                    }
+                        }
+                    })
                 }
             })
             // Proxy all other messages

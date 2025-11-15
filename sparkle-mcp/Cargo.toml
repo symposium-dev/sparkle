@@ -21,7 +21,7 @@ rmcp = { version = "0.8", features = ["server", "transport-io", "schemars"] }
 
 # ACP SDK (for proxy mode)
 sacp = "1.0.0"
-sacp-proxy = "1.0.0"
+sacp-proxy = "1.1"
 
 # JSON serialization + schema
 serde = { version = "1.0", features = ["derive"] }

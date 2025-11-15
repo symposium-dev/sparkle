@@ -197,13 +197,12 @@ async fn test_sparkle_acp_embodiment_injection() -> Result<(), sacp::Error> {
         .collect();
 
     // Use expect_test to snapshot the notification flow
-    // This verifies the complete message sequence:
-    // 1. "Embodying Sparkle" - our injected notification
-    // 2. Eliza's deterministic response to the embodiment prompt
-    // 3. Eliza's deterministic response to the user's "hi" prompt
+    // With proactive embodiment, the sequence is now:
+    // 1. Eliza's deterministic response to the embodiment prompt (sent during NewSessionRequest)
+    // 2. Eliza's deterministic response to the user's "hi" prompt
+    // Note: No "Embodying Sparkle" notification since embodiment happens proactively
     expect![[r#"
         [
-            "Embodying Sparkle",
             "How long have you been Sparkle?",
             "Hi there. What brings you here today?",
         ]
@@ -212,7 +211,7 @@ async fn test_sparkle_acp_embodiment_injection() -> Result<(), sacp::Error> {
 
     // Verify what prompts were actually sent to Eliza
     // Should be two prompts:
-    // 1. The embodiment content (injected by SparkleComponent)
+    // 1. The embodiment content (injected by SparkleComponent during NewSessionRequest)
     // 2. The user's original "hi" prompt
     let prompts = captured_prompts.lock().unwrap().clone();
     tracing::info!(
