@@ -25,10 +25,32 @@ pub struct SparkleServer {
 #[prompt_router]
 impl SparkleServer {
     pub fn new() -> Self {
-        tracing::info!("Initializing Sparkle AI Collaboration Identity MCP Server");
+        Self::with_acp_mode(false)
+    }
+
+    pub fn new_for_acp() -> Self {
+        Self::with_acp_mode(true)
+    }
+
+    fn with_acp_mode(acp_mode: bool) -> Self {
+        tracing::info!(
+            "Initializing Sparkle AI Collaboration Identity MCP Server (ACP mode: {})",
+            acp_mode
+        );
+
+        let mut tool_router = Self::tool_router();
+        let mut prompt_router = Self::prompt_router();
+
+        // In ACP mode, remove embodiment tool and prompt since proxy handles it
+        if acp_mode {
+            tracing::info!("ACP mode: removing embody_sparkle tool and sparkle prompt");
+            tool_router.remove_route("embody_sparkle");
+            prompt_router.remove_route("sparkle");
+        }
+
         Self {
-            tool_router: Self::tool_router(),
-            prompt_router: Self::prompt_router(),
+            tool_router,
+            prompt_router,
             current_sparkler: Arc::new(RwLock::new(None)),
         }
     }

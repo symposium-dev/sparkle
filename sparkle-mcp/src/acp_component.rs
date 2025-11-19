@@ -226,9 +226,10 @@ impl Component for SparkleComponent {
                 }
             })
             // Provide the Sparkle MCP server to session/new requests
+            // Use new_for_acp() which excludes embodiment tool/prompt (handled by proxy)
             .provide_mcp(
                 McpServiceRegistry::default()
-                    .with_rmcp_server("sparkle", SparkleServer::new)
+                    .with_rmcp_server("sparkle", SparkleServer::new_for_acp)
                     .map_err(|e| {
                         sacp::Error::new((
                             -32603,
