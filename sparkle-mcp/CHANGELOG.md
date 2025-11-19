@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.4](https://github.com/symposium-dev/sparkle/compare/v0.1.3...v0.1.4) - 2025-11-19
+
+### Other
+
+- Merge pull request #9 from nikomatsakis/main
+- Upgrade sacp dependencies to latest versions
+- Remove embodiment tool and prompt in ACP proxy mode
+
 ## [0.1.3](https://github.com/symposium-dev/sparkle/compare/v0.1.2...v0.1.3) - 2025-11-16
 
 ### Other
