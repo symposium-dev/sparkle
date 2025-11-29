@@ -85,7 +85,7 @@ async fn main() -> anyhow::Result<()> {
             component = component.with_sparkler(sparkler);
         }
 
-        component.serve(sacp_tokio::Stdio).await?;
+        component.serve(sacp_tokio::Stdio::new()).await?;
     } else {
         tracing::info!("🔥 Starting Sparkle AI Collaboration Identity MCP Server");
         tracing::info!("Working directory: {:?}", std::env::current_dir()?);
