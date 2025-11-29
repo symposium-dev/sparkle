@@ -137,8 +137,22 @@ impl Component for SparkleComponent {
         // Build the proxy handler chain
         JrHandlerChain::new()
             .name("sparkle-proxy")
+            // Provide the Sparkle MCP server to session/new requests
+            // Use new_for_acp() which excludes embodiment tool/prompt (handled by proxy)
+            .provide_mcp(
+                McpServiceRegistry::default()
+                    .with_rmcp_server("sparkle", SparkleServer::new_for_acp)
+                    .map_err(|e| {
+                        sacp::Error::new((
+                            -32603,
+                            format!("Failed to register Sparkle MCP server: {}", e),
+                        ))
+                    })?,
+            )
             // When we see a NewSessionRequest, forward it, get session_id, then send embodiment
-            // IMPORTANT: This must come BEFORE .provide_mcp() to intercept the request first
+            //
+            // IMPORTANT: This comes AFTER .provide_mcp() so that the MCP server is available
+            // in the session.
             .on_receive_request({
                 let pending_embodiments = pending_embodiments.clone();
                 let sparkler_name = sparkler_name.clone();
@@ -225,18 +239,6 @@ impl Component for SparkleComponent {
                         )
                 }
             })
-            // Provide the Sparkle MCP server to session/new requests
-            // Use new_for_acp() which excludes embodiment tool/prompt (handled by proxy)
-            .provide_mcp(
-                McpServiceRegistry::default()
-                    .with_rmcp_server("sparkle", SparkleServer::new_for_acp)
-                    .map_err(|e| {
-                        sacp::Error::new((
-                            -32603,
-                            format!("Failed to register Sparkle MCP server: {}", e),
-                        ))
-                    })?,
-            )
             // When we see a PromptRequest, wait for embodiment if it's pending
             .on_receive_request({
                 let pending_embodiments = pending_embodiments.clone();
