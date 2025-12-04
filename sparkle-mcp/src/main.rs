@@ -25,10 +25,6 @@ struct Args {
     #[arg(long)]
     acp: bool,
 
-    /// Workspace path for embodiment context (ACP mode only)
-    #[arg(long)]
-    workspace: Option<String>,
-
     /// Sparkler name for multi-sparkler setups (ACP mode only)
     #[arg(long)]
     sparkler: Option<String>,
@@ -78,14 +74,11 @@ async fn main() -> anyhow::Result<()> {
 
         // Create SparkleComponent with optional parameters
         let mut component = SparkleComponent::new();
-        if let Some(workspace) = args.workspace {
-            component = component.with_workspace_path(workspace);
-        }
         if let Some(sparkler) = args.sparkler {
             component = component.with_sparkler(sparkler);
         }
 
-        component.serve(sacp_tokio::Stdio).await?;
+        component.serve(sacp_tokio::Stdio::new()).await?;
     } else {
         tracing::info!("🔥 Starting Sparkle AI Collaboration Identity MCP Server");
         tracing::info!("Working directory: {:?}", std::env::current_dir()?);

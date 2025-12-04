@@ -20,8 +20,8 @@ path = "src/main.rs"
 rmcp = { version = "0.8", features = ["server", "transport-io", "schemars"] }
 
 # ACP SDK (for proxy mode)
-sacp = "1.0.0"
-sacp-proxy = "2.0"
+sacp = "2.0.0"
+sacp-proxy = "3.0.0"
 
 # JSON serialization + schema
 serde = { version = "1.0", features = ["derive"] }
@@ -56,11 +56,11 @@ clap = { version = "4.0", features = ["derive"] }
 # File system and config
 dirs = "5.0"
 toml = "0.8"
-sacp-tokio = "1.0.0"
-sacp-rmcp = "0.8.2"
+sacp-tokio = "2.1.0"
+sacp-rmcp = "0.8.5"
 
 [dev-dependencies]
 # Testing utilities for ACP components
-elizacp = "1.0.0"
-sacp-conductor = "1.0.0"
+elizacp = "3.0.2"
+sacp-conductor = "4.0.0"
 expect-test = "1.5"

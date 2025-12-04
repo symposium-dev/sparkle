@@ -12,7 +12,7 @@ use sacp::schema::{
     TextContent,
 };
 use sacp::{Component, JrHandlerChain};
-use sacp_conductor::conductor::Conductor;
+use sacp_conductor::{Conductor, McpBridgeMode};
 use sacp_proxy::{AcpProxyExt, JrCxExt};
 use std::sync::{Arc, Mutex};
 
@@ -63,14 +63,6 @@ impl Component for CapturingComponent {
     }
 }
 
-/// Wrapper to make elizacp's run_elizacp function implement Component trait
-struct ElizaComponent;
-
-impl Component for ElizaComponent {
-    async fn serve(self, client: impl Component) -> Result<(), sacp::Error> {
-        elizacp::run_elizacp(client).await
-    }
-}
 use sparkle_mcp::SparkleComponent;
 use tokio::io::duplex;
 use tokio_util::compat::{TokioAsyncReadCompatExt, TokioAsyncWriteCompatExt};
@@ -104,7 +96,7 @@ async fn test_sparkle_acp_embodiment_injection() -> Result<(), sacp::Error> {
     // Create the component chain: SparkleComponent -> CapturingComponent -> elizacp
     let sparkle = sacp::DynComponent::new(SparkleComponent::new());
     let capturer = sacp::DynComponent::new(CapturingComponent::new(captured_prompts.clone()));
-    let eliza = sacp::DynComponent::new(ElizaComponent);
+    let eliza = sacp::DynComponent::new(elizacp::ElizaAgent::new());
 
     JrHandlerChain::new()
         .name("test-editor")
@@ -122,7 +114,7 @@ async fn test_sparkle_acp_embodiment_injection() -> Result<(), sacp::Error> {
             Conductor::new(
                 "sparkle-test-conductor".to_string(),
                 vec![sparkle, capturer, eliza],
-                None, // No nested conductor command
+                McpBridgeMode::default(),
             )
             .run(sacp::ByteStreams::new(
                 conductor_out.compat_write(),

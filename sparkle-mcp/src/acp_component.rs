@@ -89,8 +89,6 @@ impl PendingEmbodimentRequests {
 
 /// Sparkle ACP Component that provides embodiment + MCP tools via proxy
 pub struct SparkleComponent {
-    /// Optional workspace path to pass to embodiment
-    pub workspace_path: Option<String>,
     /// Optional sparkler name for multi-sparkler setups
     pub sparkler: Option<String>,
 }
@@ -98,16 +96,7 @@ pub struct SparkleComponent {
 impl SparkleComponent {
     /// Create a new SparkleComponent with default parameters
     pub fn new() -> Self {
-        Self {
-            workspace_path: None,
-            sparkler: None,
-        }
-    }
-
-    /// Set the workspace path for embodiment context
-    pub fn with_workspace_path(mut self, path: impl Into<String>) -> Self {
-        self.workspace_path = Some(path.into());
-        self
+        Self { sparkler: None }
     }
 
     /// Set the sparkler name for multi-sparkler mode
@@ -129,7 +118,6 @@ impl Component for SparkleComponent {
 
         // Capture self fields before moving into closures
         let sparkler_name = self.sparkler.clone();
-        let workspace_path = self.workspace_path.clone();
 
         // Track sessions that are currently being embodied
         let pending_embodiments = PendingEmbodimentRequests::new();
@@ -137,23 +125,43 @@ impl Component for SparkleComponent {
         // Build the proxy handler chain
         JrHandlerChain::new()
             .name("sparkle-proxy")
+            // Provide the Sparkle MCP server to session/new requests
+            // Use new_for_acp() which excludes embodiment tool/prompt (handled by proxy)
+            .provide_mcp(
+                McpServiceRegistry::default()
+                    .with_rmcp_server("sparkle", SparkleServer::new_for_acp)
+                    .map_err(|e| {
+                        sacp::Error::new((
+                            -32603,
+                            format!("Failed to register Sparkle MCP server: {}", e),
+                        ))
+                    })?,
+            )
             // When we see a NewSessionRequest, forward it, get session_id, then send embodiment
-            // IMPORTANT: This must come BEFORE .provide_mcp() to intercept the request first
+            //
+            // IMPORTANT: This comes AFTER .provide_mcp() so that the MCP server is available
+            // in the session.
             .on_receive_request({
                 let pending_embodiments = pending_embodiments.clone();
                 let sparkler_name = sparkler_name.clone();
-                let workspace_path = workspace_path.clone();
                 async move |request: NewSessionRequest,
                             request_cx: JrRequestCx<NewSessionResponse>| {
                     let connection_cx = request_cx.connection_cx();
 
-                    tracing::info!("Received NewSessionRequest");
+                    // Extract workspace path from the request's cwd field
+                    // This is where the session is running, which we need for embodiment
+                    let session_workspace_path = if request.cwd.as_os_str().is_empty() {
+                        None
+                    } else {
+                        Some(request.cwd.to_string_lossy().to_string())
+                    };
+
+                    tracing::info!(?session_workspace_path, "Received NewSessionRequest");
 
                     // Claim our own copies of the shared state
                     // so that we can move them into the future later
                     let pending_embodiments = pending_embodiments.clone();
                     let sparkler_name = sparkler_name.clone();
-                    let workspace_path = workspace_path.clone();
 
                     // Forward the NewSessionRequest to get a session_id
                     connection_cx
@@ -177,7 +185,7 @@ impl Component for SparkleComponent {
                                 let embodiment_content =
                                     generate_embodiment_content(FullEmbodimentParams {
                                         mode: Some("complete".to_string()),
-                                        workspace_path: workspace_path.clone(),
+                                        workspace_path: session_workspace_path.clone(),
                                         sparkler: sparkler_name.clone(),
                                     })
                                     .map_err(sacp::util::internal_error)?;
@@ -225,18 +233,6 @@ impl Component for SparkleComponent {
                         )
                 }
             })
-            // Provide the Sparkle MCP server to session/new requests
-            // Use new_for_acp() which excludes embodiment tool/prompt (handled by proxy)
-            .provide_mcp(
-                McpServiceRegistry::default()
-                    .with_rmcp_server("sparkle", SparkleServer::new_for_acp)
-                    .map_err(|e| {
-                        sacp::Error::new((
-                            -32603,
-                            format!("Failed to register Sparkle MCP server: {}", e),
-                        ))
-                    })?,
-            )
             // When we see a PromptRequest, wait for embodiment if it's pending
             .on_receive_request({
                 let pending_embodiments = pending_embodiments.clone();
