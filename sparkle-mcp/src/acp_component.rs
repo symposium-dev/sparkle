@@ -8,11 +8,9 @@ use crate::server::SparkleServer;
 use crate::types::FullEmbodimentParams;
 use anyhow::Result;
 use sacp::component::Component;
-use sacp::schema::{
-    NewSessionRequest, NewSessionResponse, PromptRequest, PromptResponse, SessionId, StopReason,
-};
-use sacp::{JrHandlerChain, JrRequestCx};
-use sacp_proxy::{AcpProxyExt, JrCxExt, McpServiceRegistry};
+use sacp::mcp_server::McpServiceRegistry;
+use sacp::schema::{NewSessionRequest, PromptRequest, PromptResponse, SessionId, StopReason};
+use sacp::{Agent, Client, ProxyToConductor};
 use sacp_rmcp::McpServiceRegistryRmcpExt;
 use std::collections::HashSet;
 use std::sync::{Arc, Mutex};
@@ -123,7 +121,7 @@ impl Component for SparkleComponent {
         let pending_embodiments = PendingEmbodimentRequests::new();
 
         // Build the proxy handler chain
-        JrHandlerChain::new()
+        ProxyToConductor::builder()
             .name("sparkle-proxy")
             // Provide the Sparkle MCP server to session/new requests
             // Use new_for_acp() which excludes embodiment tool/prompt (handled by proxy)
@@ -141,12 +139,12 @@ impl Component for SparkleComponent {
             //
             // IMPORTANT: This comes AFTER .provide_mcp() so that the MCP server is available
             // in the session.
-            .on_receive_request({
+            .on_receive_request_from(Client, {
                 let pending_embodiments = pending_embodiments.clone();
                 let sparkler_name = sparkler_name.clone();
                 async move |request: NewSessionRequest,
-                            request_cx: JrRequestCx<NewSessionResponse>| {
-                    let connection_cx = request_cx.connection_cx();
+                            request_cx,
+                            connection_cx| {
 
                     // Extract workspace path from the request's cwd field
                     // This is where the session is running, which we need for embodiment
@@ -165,7 +163,7 @@ impl Component for SparkleComponent {
 
                     // Forward the NewSessionRequest to get a session_id
                     connection_cx
-                        .send_request_to_successor(request)
+                        .send_request_to(Agent, request)
                         .await_when_ok_response_received(
                             request_cx,
                             async move |response, request_cx| {
@@ -191,7 +189,7 @@ impl Component for SparkleComponent {
                                     .map_err(sacp::util::internal_error)?;
 
                                 connection_cx
-                                    .send_request_to_successor(PromptRequest {
+                                    .send_request_to(Agent, PromptRequest {
                                         session_id: session_id.clone(),
                                         prompt: vec![embodiment_content.into()],
                                         meta: None,
@@ -236,8 +234,7 @@ impl Component for SparkleComponent {
             // When we see a PromptRequest, wait for embodiment if it's pending
             .on_receive_request({
                 let pending_embodiments = pending_embodiments.clone();
-                async move |request: PromptRequest, request_cx: JrRequestCx<PromptResponse>| {
-                    let connection_cx = request_cx.connection_cx();
+                async move |request: PromptRequest, request_cx, connection_cx| {
                     let session_id = request.session_id.clone();
 
                     tracing::info!(?session_id, "Received PromptRequest");
@@ -255,14 +252,12 @@ impl Component for SparkleComponent {
 
                             // Forward the prompt request
                             connection_cx
-                                .send_request_to_successor(request)
+                                .send_request_to(Agent, request)
                             .forward_to_request_cx(request_cx)
                         }
                     })
                 }
             })
-            // Proxy all other messages
-            .proxy()
             .serve(client)
             .await
     }
