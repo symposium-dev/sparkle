@@ -7,13 +7,12 @@
 
 use expect_test::expect;
 use futures::{SinkExt, StreamExt, channel::mpsc};
+use sacp::Component;
 use sacp::schema::{
     ContentBlock, InitializeRequest, NewSessionRequest, PromptRequest, SessionNotification,
     TextContent,
 };
-use sacp::{Component, JrHandlerChain};
 use sacp_conductor::{Conductor, McpBridgeMode};
-use sacp_proxy::{AcpProxyExt, JrCxExt};
 use std::sync::{Arc, Mutex};
 
 /// Component that captures all PromptRequests before forwarding them
@@ -29,11 +28,11 @@ impl CapturingComponent {
 
 impl Component for CapturingComponent {
     async fn serve(self, client: impl Component) -> Result<(), sacp::Error> {
-        JrHandlerChain::new()
+        sacp::ProxyToConductor::builder()
             .name("capturing-component")
-            .on_receive_request({
+            .on_receive_request_from(sacp::Client, {
                 let captured_prompts = self.captured_prompts.clone();
-                async move |request: PromptRequest, request_cx| {
+                async move |request: PromptRequest, request_cx, connection_cx| {
                     // Extract text from the prompt
                     let prompt_texts: Vec<String> = request
                         .prompt
@@ -51,13 +50,11 @@ impl Component for CapturingComponent {
                     captured_prompts.lock().unwrap().push(prompt_texts);
 
                     // Forward the request
-                    request_cx
-                        .connection_cx()
-                        .send_request_to_successor(request)
+                    connection_cx
+                        .send_request_to(sacp::Agent, request)
                         .forward_to_request_cx(request_cx)
                 }
             })
-            .proxy()
             .serve(client)
             .await
     }
@@ -98,7 +95,7 @@ async fn test_sparkle_acp_embodiment_injection() -> Result<(), sacp::Error> {
     let capturer = sacp::DynComponent::new(CapturingComponent::new(captured_prompts.clone()));
     let eliza = sacp::DynComponent::new(elizacp::ElizaAgent::new());
 
-    JrHandlerChain::new()
+    sacp::ClientToAgent::builder()
         .name("test-editor")
         .on_receive_notification({
             let mut notification_tx = notification_tx.clone();

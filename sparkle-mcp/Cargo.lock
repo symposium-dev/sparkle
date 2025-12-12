@@ -465,9 +465,9 @@ checksum = "d0881ea181b1df73ff77ffaaf9c7544ecc11e82fba9b5f27b262a3c73a332555"
 
 [[package]]
 name = "elizacp"
-version = "3.0.2"
+version = "4.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "693cf44732c4fa5a2aa76ed47b833999926df155ef9c77a7bc7bf86ce80924b5"
+checksum = "da396029a7abffe0583ded2907946774b4a77d27069ee123b6128afa014f1b20"
 dependencies = [
  "agent-client-protocol-schema",
  "anyhow",
@@ -1771,10 +1771,11 @@ dependencies = [
 
 [[package]]
 name = "rmcp"
-version = "0.8.5"
+version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e5947688160b56fb6c827e3c20a72c90392a1d7e9dec74749197aa1780ac42ca"
+checksum = "eaa07b85b779d1e1df52dd79f6c6bffbe005b191f07290136cc42a142da3409a"
 dependencies = [
+ "async-trait",
  "base64",
  "chrono",
  "futures",
@@ -1797,9 +1798,9 @@ dependencies = [
 
 [[package]]
 name = "rmcp-macros"
-version = "0.8.5"
+version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "01263441d3f8635c628e33856c468b96ebbce1af2d3699ea712ca71432d4ee7a"
+checksum = "0f6fa09933cac0d0204c8a5d647f558425538ed6a0134b1ebb1ae4dc00c96db3"
 dependencies = [
  "darling",
  "proc-macro2",
@@ -1876,27 +1877,34 @@ checksum = "28d3b2b1366ec20994f1fd18c3c594f05c5dd4bc44d8bb0c1c632c8d6829481f"
 
 [[package]]
 name = "sacp"
-version = "2.0.0"
+version = "3.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "db6db3649202a5381e4b80e4cd33165e1d3416df501f78361e650dfe9e848226"
+checksum = "e3fa4c238414041dfa3b15c7267f87d4d98123ecca5f4c443e6e34cf1669613d"
 dependencies = [
  "agent-client-protocol-schema",
  "anyhow",
  "boxfnonce",
  "futures",
+ "futures-concurrency",
+ "fxhash",
  "jsonrpcmsg",
+ "rmcp",
+ "sacp-derive",
+ "schemars",
  "serde",
  "serde_json",
  "thiserror 2.0.17",
+ "tokio",
+ "tokio-util",
  "tracing",
  "uuid",
 ]
 
 [[package]]
 name = "sacp-conductor"
-version = "4.0.0"
+version = "5.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c79facce7fa66e0b7fb6e750e0c522f5abcd7c8762a60687a1d89019864c235e"
+checksum = "499388500028c1447eb2bf786b25f4d54fb3875992530d83780a6b7bdfd2cf2e"
 dependencies = [
  "agent-client-protocol-schema",
  "anyhow",
@@ -1909,7 +1917,6 @@ dependencies = [
  "fxhash",
  "hyper",
  "sacp",
- "sacp-proxy",
  "sacp-tokio",
  "sacp-trace-viewer",
  "serde",
@@ -1927,44 +1934,34 @@ dependencies = [
 ]
 
 [[package]]
-name = "sacp-proxy"
-version = "3.0.0"
+name = "sacp-derive"
+version = "2.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0d6540b3f66a016a710b4c55016e3c42213e6ddac23e79a7387ae2a49297f9eb"
+checksum = "7555e77b718ce861e1bb141a71c7dabd87f6c0f81e264eeb7526a5241c74c40f"
 dependencies = [
- "agent-client-protocol-schema",
- "futures",
- "fxhash",
- "rmcp",
- "sacp",
- "schemars",
- "serde",
- "serde_json",
- "tokio",
- "tokio-util",
- "tracing",
- "uuid",
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]
 name = "sacp-rmcp"
-version = "0.8.5"
+version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8671ca104fee6dc9fbefdf9bf425da37a89f015b357450f594cfd90ba8f19473"
+checksum = "6968b77f8f7e1543b474b8ead16763b4e73ad8b9fe33b57e6b4368af7de5969d"
 dependencies = [
  "futures",
  "rmcp",
  "sacp",
- "sacp-proxy",
  "tokio",
  "tokio-util",
 ]
 
 [[package]]
 name = "sacp-tokio"
-version = "2.1.0"
+version = "3.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ce9d41464fadd415f7b7c040aaafdaceacdc785cbe23954aa5011687a91bf479"
+checksum = "610f7bd81f88c298c9e594b4cbe2266b740769a94ace345c8c85abd55ad37570"
 dependencies = [
  "futures",
  "sacp",
@@ -2222,7 +2219,6 @@ dependencies = [
  "rmcp",
  "sacp",
  "sacp-conductor",
- "sacp-proxy",
  "sacp-rmcp",
  "sacp-tokio",
  "schemars",
