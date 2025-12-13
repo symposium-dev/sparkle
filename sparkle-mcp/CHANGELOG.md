@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.7](https://github.com/symposium-dev/sparkle/compare/v0.1.6...v0.1.7) - 2025-12-13
+
+### Added
+
+- switch to rustls for musl compatibility
+
 ## [0.1.6](https://github.com/symposium-dev/sparkle/compare/v0.1.5...v0.1.6) - 2025-12-13
 
 ### Other
