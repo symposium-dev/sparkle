@@ -8,4 +8,4 @@ AI Collaboration Identity Framework
 
 ## Documentation
 
-See the [Sparkle Framework Book](https://symposium-dev.github.io/sparkle/) for complete documentation.
+See the [Sparkle Framework Book](https://sparkle-ai-space.github.io/sparkle-mcp/) for complete documentation.
