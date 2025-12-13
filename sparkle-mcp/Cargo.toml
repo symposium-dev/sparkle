@@ -33,7 +33,7 @@ tokio-util = { version = "0.7", features = ["compat"] }
 futures = "0.3"
 
 # HTTP client
-reqwest = { version = "0.12", features = ["json"] }
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json"] }
 
 # RSS/Atom feed parsing
 feed-rs = "2.1"
