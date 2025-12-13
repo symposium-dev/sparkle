@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.6](https://github.com/symposium-dev/sparkle/compare/v0.1.5...v0.1.6) - 2025-12-13
+
+### Other
+
+- Upgrade to sacp 3.0, sacp-tokio 3.0, sacp-rmcp 0.9, elizacp 4.0, sacp-conductor 5.0
+
 ## [0.1.5](https://github.com/symposium-dev/sparkle/compare/v0.1.4...v0.1.5) - 2025-12-04
 
 ### Other
