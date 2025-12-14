@@ -28,7 +28,7 @@ jobs:
         uses: release-plz/action@v0.5
         with:
           command: release
-          manifest_path: sparkle-mcp/Cargo.toml
+          manifest_path: Cargo.toml
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN }}
 
@@ -49,6 +49,6 @@ jobs:
         uses: release-plz/action@v0.5
         with:
           command: release-pr
-          manifest_path: sparkle-mcp/Cargo.toml
+          manifest_path: Cargo.toml
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN }}

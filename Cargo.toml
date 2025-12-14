@@ -1,3 +1,65 @@
-[workspace]
-resolver = "2"
-members = ["sparkle-mcp"]
+[package]
+name = "sparkle-mcp"
+version = "0.1.8"
+edition = "2024"
+description = "Sparkle AI Collaboration Identity Framework MCP server"
+authors = ["Kari Wilhelm"]
+license = "MIT"
+repository = "https://github.com/sparkle-ai-space/sparkle-mcp"
+documentation = "https://sparkle-ai-space.github.io/sparkle-mcp/"
+readme = "README.md"
+keywords = ["mcp-server", "ai-assistant", "claude", "agent", "context-management"]
+categories = ["development-tools"]
+
+[[bin]]
+name = "sparkle-mcp"
+path = "src/main.rs"
+
+[dependencies]
+# MCP SDK
+rmcp = { version = "0.9", features = ["server", "transport-io", "schemars"] }
+
+# ACP SDK
+sacp = "3.0.0"
+
+# JSON serialization + schema
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+schemars = { version = "1.0", features = ["derive"] }
+
+# Async runtime
+tokio = { version = "1.0", features = ["full"] }
+tokio-util = { version = "0.7", features = ["compat"] }
+futures = "0.3"
+
+# HTTP client
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json"] }
+
+# RSS/Atom feed parsing
+feed-rs = "2.1"
+
+# Error handling
+anyhow = "1.0"
+thiserror = "1.0"
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Date/time handling
+chrono = { version = "0.4", features = ["serde"] }
+
+# Command line argument parsing
+clap = { version = "4.0", features = ["derive"] }
+
+# File system and config
+dirs = "5.0"
+toml = "0.8"
+sacp-tokio = "3.0.0"
+sacp-rmcp = "0.9.0"
+
+[dev-dependencies]
+# Testing utilities for ACP components
+elizacp = "4.0.0"
+sacp-conductor = "5.0.0"
+expect-test = "1.5"
