@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.11](https://github.com/sparkle-ai-space/sparkle-mcp/compare/v0.1.10...v0.1.11) - 2025-12-15
+
+### Other
+
+- Merge pull request #23 from nikomatsakis/main
+- upgrade sacp and friends to v6.0.0
+
 ## [0.1.10](https://github.com/sparkle-ai-space/sparkle-mcp/compare/v0.1.9...v0.1.10) - 2025-12-14
 
 ### Other
