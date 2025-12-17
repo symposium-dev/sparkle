@@ -8,10 +8,10 @@ use crate::server::SparkleServer;
 use crate::types::FullEmbodimentParams;
 use anyhow::Result;
 use sacp::component::Component;
-use sacp::mcp_server::McpServiceRegistry;
+use sacp::mcp_server::McpServer;
 use sacp::schema::{NewSessionRequest, PromptRequest, PromptResponse, SessionId, StopReason};
 use sacp::{Agent, Client, ProxyToConductor};
-use sacp_rmcp::McpServiceRegistryRmcpExt;
+use sacp_rmcp::McpServerExt as _;
 use std::collections::HashSet;
 use std::sync::{Arc, Mutex};
 use tokio::sync::Notify;
@@ -125,19 +125,10 @@ impl Component for SparkleComponent {
             .name("sparkle-proxy")
             // Provide the Sparkle MCP server to session/new requests
             // Use new_for_acp() which excludes embodiment tool/prompt (handled by proxy)
-            .provide_mcp(
-                McpServiceRegistry::default()
-                    .with_rmcp_server("sparkle", SparkleServer::new_for_acp)
-                    .map_err(|e| {
-                        sacp::Error::new((
-                            -32603,
-                            format!("Failed to register Sparkle MCP server: {}", e),
-                        ))
-                    })?,
-            )
+            .with_mcp_server(McpServer::from_rmcp("sparkle", SparkleServer::new_for_acp))
             // When we see a NewSessionRequest, forward it, get session_id, then send embodiment
             //
-            // IMPORTANT: This comes AFTER .provide_mcp() so that the MCP server is available
+            // IMPORTANT: This comes AFTER .with_mcp_server() so that the MCP server is available
             // in the session.
             .on_receive_request_from(Client, {
                 let pending_embodiments = pending_embodiments.clone();
@@ -145,6 +136,8 @@ impl Component for SparkleComponent {
                 async move |request: NewSessionRequest,
                             request_cx,
                             connection_cx| {
+
+                    tracing::info!("NewSessionRequest handler triggered");
 
                     // Extract workspace path from the request's cwd field
                     // This is where the session is running, which we need for embodiment
@@ -230,9 +223,9 @@ impl Component for SparkleComponent {
                             },
                         )
                 }
-            })
+            }, sacp::on_receive_request!())
             // When we see a PromptRequest, wait for embodiment if it's pending
-            .on_receive_request({
+            .on_receive_request_from(Client, {
                 let pending_embodiments = pending_embodiments.clone();
                 async move |request: PromptRequest, request_cx, connection_cx| {
                     let session_id = request.session_id.clone();
@@ -257,7 +250,7 @@ impl Component for SparkleComponent {
                         }
                     })
                 }
-            })
+            }, sacp::on_receive_request!())
             .serve(client)
             .await
     }

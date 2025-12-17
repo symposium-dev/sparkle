@@ -54,7 +54,7 @@ impl Component for CapturingComponent {
                         .send_request_to(sacp::Agent, request)
                         .forward_to_request_cx(request_cx)
                 }
-            })
+            }, sacp::on_receive_request!())
             .serve(client)
             .await
     }
@@ -77,6 +77,11 @@ async fn recv<R: sacp::JrResponsePayload + Send>(
 
 #[tokio::test]
 async fn test_sparkle_acp_embodiment_injection() -> Result<(), sacp::Error> {
+    // Initialize tracing for test debugging
+    let _ = tracing_subscriber::fmt()
+        .with_env_filter("info")
+        .with_test_writer()
+        .try_init();
     // Create channel to collect session notifications
     let (notification_tx, mut notification_rx) = mpsc::unbounded();
 
@@ -106,7 +111,7 @@ async fn test_sparkle_acp_embodiment_injection() -> Result<(), sacp::Error> {
                     .await
                     .map_err(|_| sacp::Error::internal_error())
             }
-        })
+        }, sacp::on_receive_notification!())
         .with_spawned(|_cx| async move {
             Conductor::new(
                 "sparkle-test-conductor".to_string(),
